@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from './supabase-client'
+import { supabase, supabaseAdmin } from './supabase-singleton'
 import type { User } from '../types/game'
 
 // Enhanced Farcaster authentication helper for Supabase

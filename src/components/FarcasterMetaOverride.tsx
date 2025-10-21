@@ -13,7 +13,7 @@ export default function FarcasterMetaOverride(): null {
         action: {
           type: "launch_frame",
           name: "Bitcoin Blocks",
-          url: "https://gas-aside-395.app.ohara.ai",
+          url: "https://bitcoin-blocks.vercel.app/",
           splashImageUrl: "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg",
           splashBackgroundColor: "#ffffff"
         }

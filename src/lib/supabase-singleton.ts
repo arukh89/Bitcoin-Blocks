@@ -1,161 +1,155 @@
 import { createClient } from '@supabase/supabase-js'
 
-// DEBUG: Log environment and runtime information
-console.log('🔍 DEBUG - Supabase Client Initialization:', {
-  runtime: typeof window !== 'undefined' ? 'browser' : 'server',
-  nodeEnv: process.env.NODE_ENV,
-  nextRuntime: process.env.NEXT_RUNTIME,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
-  hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  timestamp: new Date().toISOString()
-})
+// Singleton pattern to prevent multiple Supabase instances
+class SupabaseSingleton {
+  private static instance: SupabaseSingleton
+  private _supabase: ReturnType<typeof createClient> | null = null
+  private _supabaseAdmin: ReturnType<typeof createClient> | null = null
 
-// Enhanced Supabase client configuration with optimized settings
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    nodeEnv: process.env.NODE_ENV
-  })
-  throw new Error('Missing required Supabase environment variables')
-}
-
-// Enhanced client configuration for optimal performance and security
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  // Database configuration with performance optimizations
-  db: {
-    schema: 'public'
-  },
-  // Real-time configuration with optimized settings
-  realtime: {
-    params: {
-      eventsPerSecond: 10, // Optimized for Bitcoin Blocks game
-      // Enhanced WebSocket configuration
-      reconnectDelay: 2000, // 2 seconds
-      maxReconnectAttempts: 10,
-      heartbeatIntervalMs: 30000, // 30 seconds
-      wsCloseTimeout: 5000, // 5 seconds
+  static getInstance(): SupabaseSingleton {
+    if (!SupabaseSingleton.instance) {
+      SupabaseSingleton.instance = new SupabaseSingleton()
     }
-  },
-  
-  // Enhanced authentication configuration
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-    // Enhanced session management
-    debug: process.env.NODE_ENV === 'development',
-    // Flow control for auth requests
-    flowType: 'pkce'
-  },
-  
-  // Global configuration with enhanced headers and security
-  global: {
-    headers: {
-      'x-application-name': 'bitcoin-blocks-miniapp',
-      'x-application-version': '1.0.0',
-      'x-client-type': 'web',
-      // Security headers
-      'x-content-type-options': 'nosniff',
-      'x-frame-options': 'DENY',
-      'x-xss-protection': '1; mode=block'
+    return SupabaseSingleton.instance
+  }
+
+  // Get or create the main Supabase client
+  get supabase() {
+    if (!this._supabase) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing required Supabase environment variables')
+      }
+
+      this._supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        realtime: {
+          params: {
+            eventsPerSecond: 10,
+            reconnectDelay: 2000,
+            maxReconnectAttempts: 10,
+            heartbeatIntervalMs: 30000,
+            wsCloseTimeout: 5000,
+          }
+        },
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          debug: process.env.NODE_ENV === 'development',
+          flowType: 'pkce'
+        },
+        global: {
+          headers: {
+            'x-application-name': 'bitcoin-blocks-miniapp',
+            'x-application-version': '1.0.0',
+            'x-client-type': 'web',
+            'x-content-type-options': 'nosniff',
+            'x-frame-options': 'DENY',
+            'x-xss-protection': '1; mode=block'
+          }
+        }
+      })
+
+      console.log('✅ Supabase client initialized (singleton)')
     }
-  },
-  
-  // Error handling and retry configuration
-  // Note: Custom retry logic is implemented in the withSupabaseRetry function
-})
 
-// Enhanced admin client for server-side operations with elevated privileges
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    return this._supabase
+  }
 
-if (!serviceRoleKey) {
-  console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
-  throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
-}
+  // Get or create the admin Supabase client
+  get supabaseAdmin() {
+    if (!this._supabaseAdmin) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      debug: process.env.NODE_ENV === 'development'
-    },
+      if (!supabaseUrl || !serviceRoleKey) {
+        throw new Error('Missing required Supabase environment variables for admin client')
+      }
+
+      this._supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          debug: process.env.NODE_ENV === 'development'
+        },
+        global: {
+          headers: {
+            'x-application-name': 'bitcoin-blocks-miniapp-admin',
+            'x-application-version': '1.0.0',
+            'x-client-type': 'admin',
+            'x-privilege-level': 'service-role'
+          },
+        }
+      })
+
+      console.log('✅ Supabase admin client initialized (singleton)')
+    }
+
+    return this._supabaseAdmin
+  }
+
+  // Create role-specific client
+  createSupabaseClient(role: 'anon' | 'service' | 'custom', customKey?: string) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     
-    // Enhanced database configuration for admin operations
-    db: {
-      schema: 'public'
-    },
+    if (!supabaseUrl) {
+      throw new Error('Supabase URL is not configured')
+    }
     
-    // Global configuration for admin client
-    global: {
-      headers: {
-        'x-application-name': 'bitcoin-blocks-miniapp-admin',
-        'x-application-version': '1.0.0',
-        'x-client-type': 'admin',
-        'x-privilege-level': 'service-role'
+    let key: string
+    switch (role) {
+      case 'anon':
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        if (!anonKey) {
+          throw new Error('Supabase anon key is not configured')
+        }
+        key = anonKey
+        break
+      case 'service':
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (!serviceKey) {
+          throw new Error('Supabase service role key is not configured')
+        }
+        key = serviceKey
+        break
+      case 'custom':
+        if (!customKey) {
+          throw new Error('Custom role requires a custom key')
+        }
+        key = customKey
+        break
+      default:
+        throw new Error(`Invalid role: ${role}`)
+    }
+    
+    return createClient(supabaseUrl, key, {
+      auth: {
+        persistSession: role === 'anon',
+        autoRefreshToken: role === 'anon',
+        detectSessionInUrl: false
       },
-    }
+      global: {
+        headers: {
+          'x-application-name': 'bitcoin-blocks-miniapp',
+          'x-client-role': role
+        }
+      }
+    })
   }
-)
-
-// Enhanced utility function for creating role-specific clients
-export function createSupabaseClient(role: 'anon' | 'service' | 'custom', customKey?: string) {
-  const url = supabaseUrl
-  
-  if (!url) {
-    throw new Error('Supabase URL is not configured')
-  }
-  
-  let key: string
-  switch (role) {
-    case 'anon':
-      if (!supabaseAnonKey) {
-        throw new Error('Supabase anon key is not configured')
-      }
-      key = supabaseAnonKey
-      break
-    case 'service':
-      if (!serviceRoleKey) {
-        throw new Error('Supabase service role key is not configured')
-      }
-      key = serviceRoleKey
-      break
-    case 'custom':
-      if (!customKey) {
-        throw new Error('Custom role requires a custom key')
-      }
-      key = customKey
-      break
-    default:
-      throw new Error(`Invalid role: ${role}`)
-  }
-  
-  return createClient(url, key, {
-    auth: {
-      persistSession: role === 'anon',
-      autoRefreshToken: role === 'anon',
-      detectSessionInUrl: false
-    },
-    db: {
-      schema: 'public'
-    },
-    global: {
-      headers: {
-        'x-application-name': 'bitcoin-blocks-miniapp',
-        'x-client-role': role
-      }
-    }
-  })
 }
 
-// Enhanced connection health check utility
+// Export singleton instance
+const supabaseSingleton = SupabaseSingleton.getInstance()
+
+// Export the clients
+export const supabase = supabaseSingleton.supabase
+export const supabaseAdmin = supabaseSingleton.supabaseAdmin
+export const createSupabaseClient = (role: 'anon' | 'service' | 'custom', customKey?: string) => 
+  supabaseSingleton.createSupabaseClient(role, customKey)
+
+// Re-export other utilities from the original file
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
     const { data, error } = await supabase
@@ -176,7 +170,6 @@ export async function checkSupabaseConnection(): Promise<boolean> {
   }
 }
 
-// Enhanced retry wrapper for Supabase operations
 export async function withSupabaseRetry<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
@@ -195,7 +188,7 @@ export async function withSupabaseRetry<T>(
         throw lastError
       }
       
-      const delay = baseDelay * Math.pow(2, attempt - 1) // Exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt - 1)
       console.warn(`⚠️ Supabase operation attempt ${attempt}/${maxRetries} failed, retrying in ${delay}ms:`, error)
       
       await new Promise(resolve => setTimeout(resolve, delay))
@@ -205,12 +198,11 @@ export async function withSupabaseRetry<T>(
   throw lastError!
 }
 
-// Enhanced connection monitoring
 export class SupabaseConnectionMonitor {
   private static instance: SupabaseConnectionMonitor
   private isConnected: boolean = false
   private checkInterval: NodeJS.Timeout | null = null
-  private readonly CHECK_INTERVAL = 30000 // 30 seconds
+  private readonly CHECK_INTERVAL = 30000
   private listeners: ((connected: boolean) => void)[] = []
   
   static getInstance(): SupabaseConnectionMonitor {
@@ -277,9 +269,9 @@ export class SupabaseConnectionMonitor {
   }
 }
 
-// Export connection monitor instance
 export const connectionMonitor = SupabaseConnectionMonitor.getInstance()
 
+// Export database types
 export type Database = {
   public: {
     Tables: {

@@ -1,5 +1,5 @@
 import { createClient } from '@farcaster/quick-auth'
-import { supabaseAdmin } from './supabase-client'
+import { supabaseAdmin } from './supabase-singleton'
 import { logSystemError } from './error-handling'
 
 // Security utilities for Bitcoin Blocks Mini App

@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin, type Database } from './supabase-client'
+import { supabase, supabaseAdmin, type Database } from './supabase-singleton'
 import type { Round, Guess, ChatMessage, PrizeConfiguration, Log } from '../types/game'
 import { logSystemError } from './error-handling'
 
