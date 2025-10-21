@@ -5,6 +5,15 @@ import { logSystemError } from './lib/error-handling'
 // Security middleware for Bitcoin Blocks Mini App
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  // DEBUG: Log environment variables and runtime info
+  console.log('🔍 DEBUG - Middleware Runtime Info:', {
+    runtime: process.env.NEXT_RUNTIME || 'unknown',
+    nodeEnv: process.env.NODE_ENV,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    actualUrl: request.url,
+    userAgent: request.headers.get('user-agent'),
+    timestamp: new Date().toISOString()
+  })
   // Create response with security headers
   const response = NextResponse.next({
     request: {

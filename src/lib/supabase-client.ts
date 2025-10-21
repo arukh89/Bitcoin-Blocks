@@ -1,11 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
+// DEBUG: Log environment and runtime information
+console.log('🔍 DEBUG - Supabase Client Initialization:', {
+  runtime: typeof window !== 'undefined' ? 'browser' : 'server',
+  nodeEnv: process.env.NODE_ENV,
+  nextRuntime: process.env.NEXT_RUNTIME,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
+  hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  timestamp: new Date().toISOString()
+})
+
 // Enhanced Supabase client configuration with optimized settings
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Enhanced client configuration for optimal performance and security
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  // Database configuration with performance optimizations
+  db: {
+    schema: 'public'
+  },
   // Real-time configuration with optimized settings
   realtime: {
     params: {
@@ -16,11 +30,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       heartbeatIntervalMs: 30000, // 30 seconds
       wsCloseTimeout: 5000, // 5 seconds
     }
-  },
-  
-  // Database configuration with performance optimizations
-  db: {
-    schema: 'public'
   },
   
   // Enhanced authentication configuration

@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/analytics/route": "/api/analytics",
+  "/api/admin/route": "/api/admin",
+  "/api/auth/me/route": "/api/auth/me",
+  "/api/base-balance/route": "/api/base-balance",
+  "/api/errors/route": "/api/errors",
+  "/api/farcaster-announce/route": "/api/farcaster-announce",
+  "/api/mempool/route": "/api/mempool",
+  "/api/proxy/route": "/api/proxy",
+  "/admin/page": "/admin",
+  "/page": "/",
+  "/api/debug/route": "/api/debug"
+}

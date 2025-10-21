@@ -1,1 +1,14 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/analytics/route": "app/api/analytics/route.js",
+  "/api/admin/route": "app/api/admin/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/base-balance/route": "app/api/base-balance/route.js",
+  "/api/errors/route": "app/api/errors/route.js",
+  "/api/farcaster-announce/route": "app/api/farcaster-announce/route.js",
+  "/api/mempool/route": "app/api/mempool/route.js",
+  "/api/proxy/route": "app/api/proxy/route.js",
+  "/admin/page": "app/admin/page.js",
+  "/page": "app/page.js",
+  "/api/debug/route": "app/api/debug/route.js"
+}

@@ -1,0 +1,39 @@
+{
+  "startTime": "2025-10-20T21:20:43.240Z",
+  "phases": {
+    "Test Basic Connectivity": {
+      "startTime": "2025-10-20T21:20:43.259Z",
+      "status": "completed",
+      "endTime": "2025-10-20T21:20:43.924Z",
+      "result": {
+        "storage": false,
+        "auth": true,
+        "database": true,
+        "overall": false
+      }
+    },
+    "Create Storage Buckets": {
+      "startTime": "2025-10-20T21:20:43.925Z",
+      "status": "failed",
+      "endTime": "2025-10-20T21:20:43.982Z",
+      "error": "Invalid Compact JWS"
+    }
+  },
+  "filesProcessed": 0,
+  "filesUploaded": 0,
+  "filesUpdated": 0,
+  "errors": [
+    {
+      "phase": "Create Storage Buckets",
+      "error": "Invalid Compact JWS",
+      "timestamp": "2025-10-20T21:20:43.982Z"
+    }
+  ],
+  "warnings": [],
+  "conflicts": [],
+  "endTime": "2025-10-20T21:20:43.982Z",
+  "fatalError": {
+    "message": "Invalid Compact JWS",
+    "stack": "StorageApiError: Invalid Compact JWS\n    at C:\\Users\\UserBQ\\Downloads\\mini app\\blocks\\node_modules\\.pnpm\\@supabase+storage-js@2.76.0\\node_modules\\@supabase\\storage-js\\dist\\main\\lib\\fetch.js:20:20\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
+  }
+}

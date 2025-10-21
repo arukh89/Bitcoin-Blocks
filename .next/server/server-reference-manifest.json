@@ -1,5 +1,1 @@
-{
-  "node": {},
-  "edge": {},
-  "encryptionKey": "6j0+ZTp2KSqKLhhzDZqYBikvhIHk72k3HFMIdGyyRqo="
-}
+{"node":{"40b550895e763e83b50fcb95a030a54628ed271ed3":{"workers":{"app/api/base-balance/route":{"moduleId":"5350","async":false}},"layer":{"app/api/base-balance/route":"rsc"}}},"edge":{},"encryptionKey":"6j0+ZTp2KSqKLhhzDZqYBikvhIHk72k3HFMIdGyyRqo="}

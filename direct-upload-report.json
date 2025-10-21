@@ -1,0 +1,607 @@
+{
+  "metadata": {
+    "startTime": "2025-10-20T22:21:29.563Z",
+    "endTime": "2025-10-20T22:36:57.646Z",
+    "duration": 928,
+    "version": "1.0.0",
+    "supabaseUrl": "https://masgfwpxfytraiwkvbmg.supabase.co"
+  },
+  "summary": {
+    "totalFiles": 95,
+    "filesProcessed": 95,
+    "filesUploaded": 0,
+    "filesFailed": 95,
+    "totalSize": 0,
+    "errors": 95,
+    "warnings": 0,
+    "successRate": 0
+  },
+  "successfulUploads": [],
+  "errors": [
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": ".env",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": ".kilocode/mcp.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": ".vscode/extensions.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": ".vscode/mcp.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": ".vscode/settings.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "alternative-sync-report-error.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "comprehensive-sync-report-error.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "COMPREHENSIVE_SYNC_REPORT.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "DEPLOYMENT_CHECKLIST.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "DEPLOYMENT_GUIDE.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "docker-compose.yml",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "Dockerfile.dockerfile",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "env.example",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "FINAL_SUPABASE_SYNCHRONIZATION_REPORT.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "MANUAL_INTERVENTION_GUIDE.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "master-sync-log-error.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "mcp.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "next-env.d.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "package.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "pnpm-lock.yaml",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "public/.well-known/farcaster.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "README.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/alternative-sync.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/analyze-supabase.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/comprehensive-sync.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/db-schema-validator.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/deploy-supabase.sh",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/fix-supabase-mime-types.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/master-sync.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/supabase-analysis-and-manual-steps.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/supabase-direct-upload.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/supabase-mcp-upload.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/supabase-storage-manager.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "scripts/sync-supabase.js",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/admin/page.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/admin/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/analytics/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/auth/me/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/base-balance/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/errors/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/farcaster-announce/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/mempool/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/api/proxy/route.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/globals.css",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/layout.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/app/page.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/AdminPanel.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/AllPredictions.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/AnimatedBackground.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/AuthButton.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/Countdown.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/CurrentRound.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/DatabaseStatusBanner.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/FarcasterMetaOverride.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/FarcasterWrapper.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/GlobalChat.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/GuessForm.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/Leaderboard.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/LoadingScreen.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/PerformanceDashboard.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/PrizesAndRulesSection.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/PrizesSection.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/RecentBlocks.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/RulesSection.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/avatar.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/badge.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/button.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/card.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/input.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/ui/label.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/components/WalletBalanceDisplay.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/config/app-config.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/context/GameContext.tsx",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/hooks/use-toast.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/hooks/usePerformanceTracking.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/error-handling.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/performance.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/security.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/supabase-auth.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/supabase-client.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/supabase-db.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/lib/utils.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/middleware.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "src/types/game.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase/migrations/001_initial_schema.sql",
+      "bucket": "backups",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase/migrations/002_error_logs.sql",
+      "bucket": "backups",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase/migrations/003_schema_optimizations.sql",
+      "bucket": "backups",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase/schema.sql",
+      "bucket": "backups",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase/setup-schema.ts",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase-analysis-manual-steps.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase-analysis-report.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "supabase-mcp-upload-report.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "SUPABASE_MIGRATION_GUIDE.md",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "tsconfig.json",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    },
+    {
+      "type": "FILE_UPLOAD_ERROR",
+      "path": "tsconfig.tsbuildinfo",
+      "bucket": "project-files",
+      "error": "All upload strategies failed"
+    }
+  ],
+  "warnings": [],
+  "recommendations": [
+    {
+      "type": "UPLOAD_FAILURES",
+      "priority": "HIGH",
+      "message": "95 files failed to upload",
+      "action": "Review error logs and retry failed uploads"
+    },
+    {
+      "type": "NO_FILES_UPLOADED",
+      "priority": "CRITICAL",
+      "message": "No files were successfully uploaded",
+      "action": "Check Supabase permissions and bucket configuration"
+    }
+  ]
+}
