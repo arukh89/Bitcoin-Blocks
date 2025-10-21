@@ -1,0 +1,26 @@
+{
+  "frame": {
+    "version": "1",
+    "name": "Bitcoin Blocks",
+    "iconUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_9f60f0c6-c9ab-41f5-a2d9-6234f1e9deea-58nnKDHo0Kl3GHSEKKjUNW1xfgwbxR",
+    "homeUrl": "https://gas-aside-395.app.ohara.ai",
+    "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_9f60f0c6-c9ab-41f5-a2d9-6234f1e9deea-58nnKDHo0Kl3GHSEKKjUNW1xfgwbxR",
+    "buttonTitle": "Bitcoin Blocks",
+    "splashImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg",
+    "splashBackgroundColor": "#ffffff",
+    "tags": [
+      "bitcoin-blocks",
+      "mini-app",
+      "base",
+      "farcaster"
+    ],
+    "primaryCategory": "entertainment",
+    "ogTitle": "Bitcoin Blocks",
+    "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_9f60f0c6-c9ab-41f5-a2d9-6234f1e9deea-58nnKDHo0Kl3GHSEKKjUNW1xfgwbxR"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI1MDcwNCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDE1MzY1NzE0NWVBMmQ1Nzk2OTFhMTQ2YzdFYTRDRkFFMzdEMjdGYWUifQ",
+    "payload": "eyJkb21haW4iOiJnYXMtYXNpZGUtMzk1LmFwcC5vaGFyYS5haSJ9",
+    "signature": "MHhiYzNjOTAwZjM2Zjk4NDkxODA2MGVlYTQwMWU5MjJhMjQzYTFiODdiNjlmNjI1MjBhYjkyYWY4ZGQ2MTc2YWUyNWFmZTg3YjM3NTQwYTc0OWMxNTdlYWUwNmM4MzE0MzI4ODg0Y2ZhMDIwNTQ4MTEwZWQzY2Y2OTM3ODgzNTJkMjFi"
+  }
+}

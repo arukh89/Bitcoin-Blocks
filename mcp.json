@@ -1,0 +1,13 @@
+{
+  "models": [
+    {
+      "id": "kilo-ai",
+      "name": "Kilo AI GPT-5",
+      "type": "http",
+      "endpoint": "https://api.kiloai.app/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer sk-y0voKr6b4PJ9bfZ4HOHiUFwvAa1gDTj0ZivdplCcWP1CTtnA"
+      }
+    }
+  ]
+}
