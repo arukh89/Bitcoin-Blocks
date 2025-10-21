@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../lib/supabase-client'
-import { supabaseDb } from '../../../lib/supabase-db'
+import { supabaseDbFixed } from '../../../lib/supabase-db-fixed'
 import { logSystemError } from '../../../lib/error-handling'
 import PerformanceMonitor from '../../../lib/performance'
 
@@ -37,13 +37,9 @@ async function verifyAdmin(request: NextRequest): Promise<{ fid: string } | null
     })
 
     // Check if user is admin
-    const { data: adminData } = await supabaseAdmin
-      .from('admin_fids')
-      .select('fid')
-      .eq('fid', payload.sub.toString())
-      .single()
-
-    if (!adminData) {
+    const isAdmin = await supabaseDbFixed.isAdmin(payload.sub.toString())
+    
+    if (!isAdmin) {
       return null
     }
 
@@ -217,7 +213,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           recentGuesses,
           systemHealth
         ] = await Promise.all([
-          supabaseDb.getActiveRound(),
+          supabaseDbFixed.getActiveRound(),
           getOnlineUsers(),
           getRecentGuesses(10),
           getSystemHealth()
@@ -477,20 +473,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Record analytics events
       if (events && Array.isArray(events)) {
         for (const event of events) {
-          const { error } = await supabaseAdmin
-            .from('analytics_events')
-            .insert({
-              event: event.name,
-              data: event.data,
-              user_fid: event.userId,
-              created_at: new Date(event.timestamp || Date.now()).toISOString()
-            })
-          
-          if (error) {
-            logSystemError('Failed to record analytics event', {
-              action: 'analytics_record',
-              additionalData: { error: error.message, event }
-            }, new Error(error.message))
+          try {
+            const { error } = await supabaseAdmin
+              .from('analytics_events')
+              .insert({
+                event: event.name,
+                data: event.data,
+                user_fid: event.userId,
+                created_at: new Date(event.timestamp || Date.now()).toISOString()
+              })
+            
+            if (error) {
+              logSystemError('Failed to record analytics event', {
+                action: 'analytics_record',
+                additionalData: { error: error.message, event }
+              }, new Error(error.message))
+            }
+          } catch (err) {
+            console.warn('⚠️ analytics_events table does not exist or error:', err)
           }
         }
       }

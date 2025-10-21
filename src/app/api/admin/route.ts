@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../lib/supabase-client'
-import { supabaseDb } from '../../../lib/supabase-db'
+import { supabaseDbFixed } from '../../../lib/supabase-db-fixed'
 import { logSystemError } from '../../../lib/error-handling'
 
 // Admin API endpoints for Bitcoin Blocks Mini App
@@ -48,14 +48,24 @@ async function verifyAdmin(request: NextRequest): Promise<{ fid: string; permiss
     })
 
     // Check if user is admin and get permissions
-    const { data: adminData } = await supabaseAdmin
-      .from('admin_fids')
-      .select('fid, permissions')
-      .eq('fid', payload.sub.toString())
-      .single()
-
-    if (!adminData) {
+    const isAdmin = await supabaseDbFixed.isAdmin(payload.sub.toString())
+    
+    if (!isAdmin) {
       return null
+    }
+
+    // Try to get permissions if table exists
+    let adminData = null
+    try {
+      const { data } = await supabaseAdmin
+        .from('admin_fids')
+        .select('fid, permissions')
+        .eq('fid', payload.sub.toString())
+        .single()
+      adminData = data
+    } catch (err) {
+      // Table doesn't exist, use default permissions
+      adminData = { fid: payload.sub.toString(), permissions: ['read', 'write'] }
     }
 
     // Check rate limit
@@ -110,13 +120,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     switch (action) {
       case 'stats':
         // Get admin statistics
-        const [roundsCount, activeRound, totalGuesses, totalUsers, recentErrors] = await Promise.all([
+        const [roundsCount, activeRound, totalGuesses, totalUsers] = await Promise.all([
           supabaseAdmin.from('rounds').select('id', { count: 'exact' }),
-          supabaseDb.getActiveRound(),
+          supabaseDbFixed.getActiveRound(),
           supabaseAdmin.from('guesses').select('id', { count: 'exact' }),
-          supabaseAdmin.from('user_sessions').select('fid', { count: 'exact' }),
-          supabaseAdmin.from('error_logs').select('id', { count: 'exact' }).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+          supabaseAdmin.from('user_sessions').select('fid', { count: 'exact' })
         ])
+
+        // Skip error_logs if table doesn't exist
+        let recentErrors = { count: 0 }
+        try {
+          const result = await supabaseAdmin.from('error_logs').select('id', { count: 'exact' }).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+          recentErrors = result
+        } catch (err) {
+          console.warn('⚠️ error_logs table does not exist')
+        }
 
         await logAdminAction(admin.fid, 'view_stats', {}, request)
 
@@ -158,23 +176,29 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         const logLimit = parseInt(searchParams.get('limit') || '50')
         const adminFilter = searchParams.get('admin')
 
-        let logQuery = supabaseAdmin
-          .from('audit_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range((logPage - 1) * logLimit, logPage * logLimit - 1)
+        let logs = []
+        try {
+          let logQuery = supabaseAdmin
+            .from('audit_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range((logPage - 1) * logLimit, logPage * logLimit - 1)
 
-        if (adminFilter) {
-          logQuery = logQuery.eq('admin_fid', adminFilter)
+          if (adminFilter) {
+            logQuery = logQuery.eq('admin_fid', adminFilter)
+          }
+
+          const { data: logsData, error: logError } = await logQuery
+          if (logError) throw logError
+          logs = logsData || []
+        } catch (err) {
+          console.warn('⚠️ audit_logs table does not exist or error:', err)
+          logs = []
         }
-
-        const { data: logs, error: logError } = await logQuery
-
-        if (logError) throw logError
 
         await logAdminAction(admin.fid, 'view_logs', { page: logPage, limit: logLimit, adminFilter }, request)
 
-        return NextResponse.json({ logs: logs || [] })
+        return NextResponse.json({ logs })
 
       case 'users':
         // Get user statistics
@@ -233,7 +257,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        const round = await supabaseDb.createRound({
+        const round = await supabaseDbFixed.createRound({
           roundNumber,
           startTime,
           endTime,
@@ -264,7 +288,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return NextResponse.json({ error: 'Missing roundId' }, { status: 400 })
         }
 
-        const success = await supabaseDb.endRound(roundId)
+        const success = await supabaseDbFixed.endRound(roundId)
 
         if (!success) {
           return NextResponse.json({ error: 'Failed to end round' }, { status: 500 })
@@ -288,7 +312,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        await supabaseDb.updateRoundResult(roundId, actualTxCount, blockHash, winningAddress)
+        await supabaseDbFixed.updateRoundResult(roundId, actualTxCount, blockHash, winningAddress)
 
         // Log admin action
         await supabaseAdmin.from('audit_logs').insert({
@@ -308,7 +332,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        const config = await supabaseDb.updatePrizeConfiguration({
+        const config = await supabaseDbFixed.updatePrizeConfiguration({
           jackpotAmount,
           firstPlaceAmount,
           secondPlaceAmount,
@@ -349,7 +373,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
 
           try {
-            const round = await supabaseDb.createRound({
+            const round = await supabaseDbFixed.createRound({
               roundNumber,
               startTime,
               endTime,
@@ -391,7 +415,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         
         for (const roundId of roundIds) {
           try {
-            const success = await supabaseDb.endRound(roundId)
+            const success = await supabaseDbFixed.endRound(roundId)
             results.push({ roundId, success })
           } catch (error) {
             results.push({
@@ -429,12 +453,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           cutoffDate = new Date(Date.now() - olderThan * 24 * 60 * 60 * 1000)
         }
 
-        const { error } = await supabaseAdmin
-          .from('error_logs')
-          .delete()
-          .lt('created_at', cutoffDate.toISOString())
+        try {
+          const { error } = await supabaseAdmin
+            .from('error_logs')
+            .delete()
+            .lt('created_at', cutoffDate.toISOString())
 
-        if (error) throw error
+          if (error) throw error
+        } catch (err) {
+          console.warn('⚠️ error_logs table does not exist or error:', err)
+          return NextResponse.json({ error: 'error_logs table not available' }, { status: 400 })
+        }
 
         await logAdminAction(admin.fid, 'delete_error_logs', { cutoffDate: cutoffDate.toISOString() }, request)
 

@@ -1,0 +1,169 @@
+{
+  "timestamp": "2025-10-21T15:45:56.180Z",
+  "summary": {
+    "total": 16,
+    "passed": 6,
+    "failed": 10,
+    "successRate": 37.5
+  },
+  "results": [
+    {
+      "test": "Service Role Connection",
+      "success": true,
+      "message": "Connected successfully",
+      "timestamp": "2025-10-21T15:45:55.081Z"
+    },
+    {
+      "test": "Anon Key Connection",
+      "success": true,
+      "message": "Connected successfully",
+      "timestamp": "2025-10-21T15:45:55.265Z"
+    },
+    {
+      "test": "Table rounds",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:45:55.355Z"
+    },
+    {
+      "test": "Table guesses",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:45:55.435Z"
+    },
+    {
+      "test": "Table chat_messages",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:45:55.509Z"
+    },
+    {
+      "test": "Table prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.619Z"
+    },
+    {
+      "test": "Table admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.701Z"
+    },
+    {
+      "test": "Table user_sessions",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:45:55.761Z"
+    },
+    {
+      "test": "Table audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.826Z"
+    },
+    {
+      "test": "Create Round",
+      "success": false,
+      "message": "new row for relation \"rounds\" violates check constraint \"rounds_status_check\"",
+      "timestamp": "2025-10-21T15:45:55.958Z"
+    },
+    {
+      "test": "Admin Check 250704",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.033Z"
+    },
+    {
+      "test": "Admin Check 1107084",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.097Z"
+    },
+    {
+      "test": "Prize Config",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.162Z"
+    },
+    {
+      "test": "API /api/admin",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.171Z"
+    },
+    {
+      "test": "API /api/analytics",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.175Z"
+    },
+    {
+      "test": "API /api/auth/me",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.178Z"
+    }
+  ],
+  "errors": [
+    {
+      "test": "Table prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.619Z"
+    },
+    {
+      "test": "Table admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.701Z"
+    },
+    {
+      "test": "Table audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:55.826Z"
+    },
+    {
+      "test": "Create Round",
+      "success": false,
+      "message": "new row for relation \"rounds\" violates check constraint \"rounds_status_check\"",
+      "timestamp": "2025-10-21T15:45:55.958Z"
+    },
+    {
+      "test": "Admin Check 250704",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.033Z"
+    },
+    {
+      "test": "Admin Check 1107084",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.097Z"
+    },
+    {
+      "test": "Prize Config",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:45:56.162Z"
+    },
+    {
+      "test": "API /api/admin",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.171Z"
+    },
+    {
+      "test": "API /api/analytics",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.175Z"
+    },
+    {
+      "test": "API /api/auth/me",
+      "success": false,
+      "message": "Connection failed: fetch failed",
+      "timestamp": "2025-10-21T15:45:56.178Z"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-10-21T01:40:44.198Z",
+  "status": "partial_success",
+  "migrations": [
+    "001_initial_schema.sql",
+    "002_error_logs.sql",
+    "003_schema_optimizations.sql"
+  ],
+  "completedAt": "2025-10-21T01:41:11.528Z"
+}

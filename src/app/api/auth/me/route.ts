@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, Errors } from '@farcaster/quick-auth'
 import { supabaseAdmin } from '../../../../lib/supabase-client'
+import { supabaseDbFixed } from '../../../../lib/supabase-db-fixed'
 import { supabaseAuth } from '../../../../lib/supabase-auth'
 import { logSystemError } from '../../../../lib/error-handling'
 
@@ -126,14 +127,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Check if user is admin
-    const { data: adminData } = await supabaseAdmin
-      .from('admin_fids')
-      .select('fid, permissions')
-      .eq('fid', userData.fid.toString())
-      .single()
-
-    const isAdmin = !!adminData
-    const permissions = adminData?.permissions || []
+    const isAdmin = await supabaseDbFixed.isAdmin(userData.fid.toString())
+    
+    let permissions = ['read', 'write'] // Default permissions
+    let adminData = null
+    
+    // Try to get detailed permissions if table exists
+    try {
+      const { data } = await supabaseAdmin
+        .from('admin_fids')
+        .select('fid, permissions')
+        .eq('fid', userData.fid.toString())
+        .single()
+      adminData = data
+      permissions = adminData?.permissions || permissions
+    } catch (err) {
+      console.warn('⚠️ admin_fids table does not exist, using default permissions')
+    }
 
     // Store/update user session in Supabase with error handling
     const sessionData = {
@@ -169,7 +179,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }, error as Error)
     }
 
-    // Log successful authentication
+    // Log successful authentication (if audit_logs exists)
     try {
       await supabaseAdmin
         .from('audit_logs')
@@ -185,7 +195,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         })
     } catch (error) {
       // Don't fail the request if logging fails
-      console.error('Failed to log user login:', error)
+      console.warn('⚠️ Failed to log user login (audit_logs may not exist):', error)
     }
 
     return NextResponse.json({

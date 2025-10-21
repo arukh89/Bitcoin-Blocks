@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-10-21T15:02:53.152Z",
+  "issues": [
+    "Missing table: prize_configs",
+    "Missing table: admin_fids",
+    "Missing table: audit_logs",
+    "Environment variable NEXTAUTH_SECRET has placeholder value",
+    "Environment variable SENTRY_DSN has placeholder value",
+    "Environment variable ANALYTICS_API_KEY has placeholder value",
+    "Environment variable SECURITY_SECRET_KEY has placeholder value",
+    "Environment variable SECONDS_TOKEN_PRIVATE_KEY has placeholder value",
+    "Environment variable SECONDS_TOKEN_CONTRACT_ADDRESS has placeholder value",
+    "Environment variable DATABASE_URL has placeholder value",
+    "Environment variable REDIS_URL has placeholder value",
+    "Environment variable VERCEL_DEPLOYMENT_WEBHOOK has placeholder value",
+    "Environment variable VERCEL_TEAM_ID has placeholder value",
+    "Environment variable VERCEL_PROJECT_ID has placeholder value",
+    "Potential secrets exposed in source code"
+  ],
+  "warnings": [
+    "Route admin/ has console logging",
+    "Route analytics/ has console logging",
+    "Route auth/me/ has console logging",
+    "Route base-balance/ has console logging",
+    "Route base-balance/ may not use Supabase",
+    "Route errors/ has console logging",
+    "Route farcaster-announce/ may not use Supabase",
+    "Route mempool/ has console logging",
+    "Route mempool/ may not use Supabase",
+    "Route proxy/ has console logging",
+    "Route proxy/ may not use Supabase"
+  ],
+  "fixes": [],
+  "summary": {
+    "totalIssues": 15,
+    "totalWarnings": 11,
+    "totalFixes": 0
+  }
+}

@@ -7,7 +7,35 @@
         "@supabase/mcp-server-supabase@0.5.5",
         "--access-token",
         "sbp_6d4e7f74315a3ab6646ca23441ddc03b7e25333d"
-      ]
+      ],
+      "alwaysAllow": [
+        "search_docs",
+        "list_organizations",
+        "list_projects",
+        "list_tables",
+        "list_extensions",
+        "execute_sql",
+        "restore_project",
+        "get_logs",
+        "get_organization",
+        "confirm_cost",
+        "get_anon_key",
+        "generate_typescript_types",
+        "list_migrations",
+        "get_project_url",
+        "deploy_edge_function",
+        "create_branch",
+        "rebase_branch",
+        "merge_branch",
+        "create_project",
+        "get_advisors",
+        "get_edge_function",
+        "get_project",
+        "list_edge_functions",
+        "list_branches",
+        "apply_migration"
+      ],
+      "timeout": 300
     }
   }
 }

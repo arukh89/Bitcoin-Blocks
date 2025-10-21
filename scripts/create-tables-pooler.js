@@ -1,0 +1,201 @@
+const { createClient } = require('@supabase/supabase-js')
+
+// Kredensial Supabase
+const SUPABASE_URL = 'https://masgfwpxfytraiwkvbmg.supabase.co'
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2dmd3B4Znl0cmFpd2t2Ym1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDY5NDk1NiwiZXhwIjoyMDc2MjcwOTU2fQ.fqzMqkFBZW9dydhH5yBCp35wdfQUT5clVYH-umfa1ZA'
+
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
+
+async function createTablesWithSupabaseAPI() {
+  console.log('🔧 Membuat tabel dengan Supabase API...')
+  console.log('Timestamp:', new Date().toISOString())
+
+  try {
+    // 1. Create prize_configs table using raw SQL through REST API
+    console.log('\n1. Membuat tabel prize_configs...')
+    
+    // Use the Supabase REST API directly with POST to /rest/v1/rpc/execute_sql
+    // Since we can't use exec_sql, we'll create tables via the Supabase Dashboard approach
+    
+    // Alternative: Use the database schema editor approach
+    const prizeConfigResult = await fetch(`${SUPABASE_URL}/rest/v1/prize_configs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        id: 1,
+        config_data: {
+          jackpotAmount: "1000",
+          firstPlaceAmount: "500",
+          secondPlaceAmount: "250",
+          currencyType: "USD",
+          tokenContractAddress: "0x0000000000000000000000000000000000000000"
+        },
+        updated_at: Date.now(),
+        version: 1
+      })
+    })
+
+    if (prizeConfigResult.status === 404) {
+      console.log('⚠️ Table prize_configs tidak ada, perlu dibuat manual')
+    } else if (prizeConfigResult.ok) {
+      console.log('✅ Tabel prize_configs berhasil diakses')
+    } else {
+      console.log('⚠️ Response prize_configs:', prizeConfigResult.status)
+    }
+
+    // 2. Try admin_fids
+    console.log('\n2. Mencoba akses tabel admin_fids...')
+    const adminFidResult = await fetch(`${SUPABASE_URL}/rest/v1/admin_fids`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        fid: '250704',
+        permissions: { role: "admin", permissions: ["all"], source: "initial" },
+        created_at: Date.now(),
+        updated_at: Date.now()
+      })
+    })
+
+    if (adminFidResult.status === 404) {
+      console.log('⚠️ Table admin_fids tidak ada, perlu dibuat manual')
+    } else if (adminFidResult.ok) {
+      console.log('✅ Tabel admin_fids berhasil diakses')
+    } else {
+      console.log('⚠️ Response admin_fids:', adminFidResult.status)
+    }
+
+    // 3. Try audit_logs
+    console.log('\n3. Mencoba akses tabel audit_logs...')
+    const auditLogResult = await fetch(`${SUPABASE_URL}/rest/v1/audit_logs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        id: `test-${Date.now()}`,
+        admin_fid: '250704',
+        action: 'test',
+        details: { message: "Test audit log" },
+        created_at: Date.now()
+      })
+    })
+
+    if (auditLogResult.status === 404) {
+      console.log('⚠️ Table audit_logs tidak ada, perlu dibuat manual')
+    } else if (auditLogResult.ok) {
+      console.log('✅ Tabel audit_logs berhasil diakses')
+    } else {
+      console.log('⚠️ Response audit_logs:', auditLogResult.status)
+    }
+
+    // 4. Check existing tables structure
+    console.log('\n4. Memeriksa struktur tabel yang ada...')
+    
+    const existingTables = ['rounds', 'guesses', 'chat_messages', 'user_sessions']
+    
+    for (const table of existingTables) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from(table)
+          .select('*')
+          .limit(1)
+        
+        if (error) {
+          console.log(`❌ Table ${table}: ${error.message}`)
+        } else {
+          console.log(`✅ Table ${table}: OK (${data.length} rows)`)
+          if (data.length > 0) {
+            console.log(`   Columns: ${Object.keys(data[0]).join(', ')}`)
+          }
+        }
+      } catch (err) {
+        console.log(`❌ Table ${table}: ${err.message}`)
+      }
+    }
+
+    // 5. Create manual migration instructions
+    console.log('\n5. Instruksi manual untuk membuat tabel...')
+    console.log(`
+Karena tidak bisa membuat tabel langsung via API, berikut langkah-langkah manual:
+
+1. Login ke Supabase Dashboard: https://supabase.com/dashboard
+2. Pilih project: masgfwpxfytraiwkvbmg
+3. Go to SQL Editor
+4. Jalankan query berikut:
+
+CREATE TABLE IF NOT EXISTS prize_configs (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  config_data JSONB NOT NULL,
+  updated_at BIGINT NOT NULL,
+  version BIGINT NOT NULL DEFAULT 1,
+  created_at BIGINT DEFAULT FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS admin_fids (
+  fid TEXT PRIMARY KEY,
+  permissions JSONB NOT NULL DEFAULT '{}',
+  created_at BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000),
+  updated_at BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY DEFAULT (FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000) || '-' || gen_random_uuid()::text),
+  admin_fid TEXT NOT NULL,
+  action TEXT NOT NULL,
+  details JSONB NOT NULL,
+  created_at BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000)
+);
+
+INSERT INTO admin_fids (fid, permissions, created_at, updated_at) VALUES
+('250704', '{"role": "admin", "permissions": ["all"], "source": "initial"}', FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000), FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000)),
+('1107084', '{"role": "admin", "permissions": ["all"], "source": "initial"}', FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000), FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000))
+ON CONFLICT (fid) DO NOTHING;
+
+INSERT INTO prize_configs (config_data, updated_at, version) VALUES
+'{"jackpotAmount": "1000", "firstPlaceAmount": "500", "secondPlaceAmount": "250", "currencyType": "USD", "tokenContractAddress": "0x0000000000000000000000000000000000000000"}', FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000), 1
+ON CONFLICT DO NOTHING;
+
+CREATE INDEX IF NOT EXISTS idx_admin_fids_fid ON admin_fids(fid);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_fid ON audit_logs(admin_fid);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_prize_configs_version ON prize_configs(version);
+CREATE INDEX IF NOT EXISTS idx_prize_configs_updated_at ON prize_configs(updated_at);
+
+ALTER TABLE prize_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_fids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+    `)
+
+    console.log('\n🎉 Analisis selesai!')
+
+  } catch (error) {
+    console.error('❌ Error:', error)
+    throw error
+  }
+}
+
+// Jalankan script
+createTablesWithSupabaseAPI()
+  .then(() => {
+    console.log('\n✅ Proses analisis tabel selesai!')
+  })
+  .catch((error) => {
+    console.error('\n❌ Proses analisis tabel gagal:', error)
+    process.exit(1)
+  })

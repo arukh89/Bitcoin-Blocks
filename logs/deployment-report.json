@@ -1,0 +1,159 @@
+{
+  "timestamp": "2025-10-21T15:49:12.060Z",
+  "summary": {
+    "total": 17,
+    "successful": 11,
+    "failed": 6,
+    "successRate": 64.70588235294117
+  },
+  "steps": [
+    {
+      "name": "Connection Verification",
+      "success": true,
+      "message": "Database connection successful",
+      "timestamp": "2025-10-21T15:49:10.658Z"
+    },
+    {
+      "name": "Table rounds",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:49:10.797Z"
+    },
+    {
+      "name": "Table guesses",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:49:10.864Z"
+    },
+    {
+      "name": "Table chat_messages",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:49:10.915Z"
+    },
+    {
+      "name": "Table user_sessions",
+      "success": true,
+      "message": "Exists (0 rows)",
+      "timestamp": "2025-10-21T15:49:10.995Z"
+    },
+    {
+      "name": "Table prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.074Z"
+    },
+    {
+      "name": "Table admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.133Z"
+    },
+    {
+      "name": "Table audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.196Z"
+    },
+    {
+      "name": "Create prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.299Z"
+    },
+    {
+      "name": "Create admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.399Z"
+    },
+    {
+      "name": "Create audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.465Z"
+    },
+    {
+      "name": "Test Round Creation",
+      "success": true,
+      "message": "Round created with ID: 4",
+      "timestamp": "2025-10-21T15:49:11.558Z"
+    },
+    {
+      "name": "Test Round Update",
+      "success": true,
+      "message": "Round updated successfully",
+      "timestamp": "2025-10-21T15:49:11.660Z"
+    },
+    {
+      "name": "Test Round Cleanup",
+      "success": true,
+      "message": "Test round deleted",
+      "timestamp": "2025-10-21T15:49:11.709Z"
+    },
+    {
+      "name": "Service Role Key Access",
+      "success": true,
+      "message": "Validation passed",
+      "timestamp": "2025-10-21T15:49:11.765Z"
+    },
+    {
+      "name": "Anon Key Access",
+      "success": true,
+      "message": "Validation passed",
+      "timestamp": "2025-10-21T15:49:11.815Z"
+    },
+    {
+      "name": "Table Operations",
+      "success": true,
+      "message": "Validation passed",
+      "timestamp": "2025-10-21T15:49:12.058Z"
+    }
+  ],
+  "errors": [
+    {
+      "name": "Table prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.074Z"
+    },
+    {
+      "name": "Table admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.133Z"
+    },
+    {
+      "name": "Table audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.196Z"
+    },
+    {
+      "name": "Create prize_configs",
+      "success": false,
+      "message": "Could not find the table 'public.prize_configs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.299Z"
+    },
+    {
+      "name": "Create admin_fids",
+      "success": false,
+      "message": "Could not find the table 'public.admin_fids' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.399Z"
+    },
+    {
+      "name": "Create audit_logs",
+      "success": false,
+      "message": "Could not find the table 'public.audit_logs' in the schema cache",
+      "timestamp": "2025-10-21T15:49:11.465Z"
+    }
+  ],
+  "recommendations": [
+    "Create prize_configs table manually via Supabase Dashboard",
+    "Create admin_fids table manually via Supabase Dashboard",
+    "Create audit_logs table manually via Supabase Dashboard",
+    "Test all API endpoints after deployment",
+    "Monitor error logs for any issues",
+    "Set up proper database backups"
+  ]
+}
