@@ -165,7 +165,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     try {
-      await supabaseAdmin
+      await (supabaseAdmin as any)
         .from('user_sessions')
         .upsert(sessionData, { onConflict: 'fid' })
     } catch (error) {
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // Log successful authentication (if audit_logs exists)
     try {
-      await supabaseAdmin
+      await (supabaseAdmin as any)
         .from('audit_logs')
         .insert({
           admin_fid: userData.fid.toString(),

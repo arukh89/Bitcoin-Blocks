@@ -25,7 +25,7 @@ interface PerformanceAlert {
 
 export function PerformanceDashboard() {
   const { trackInteraction } = usePerformanceTracking('PerformanceDashboard')
-  const { connected, performance } = useGame()
+  const { connected } = useGame()
   const [metrics, setMetrics] = useState<PerformanceMetric[]>([])
   const [alerts, setAlerts] = useState<PerformanceAlert[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
@@ -93,14 +93,6 @@ export function PerformanceDashboard() {
           status: connected ? 'good' : 'critical'
         })
         
-        // Sync performance
-        processedMetrics.push({
-          name: 'Sync Operations',
-          value: performance.syncCount,
-          unit: 'count',
-          timestamp: Date.now(),
-          status: performance.errorCount > 5 ? 'warning' : 'good'
-        })
         
         setMetrics(processedMetrics)
         
@@ -119,14 +111,6 @@ export function PerformanceDashboard() {
           })
         }
         
-        if (performance.errorCount > 0) {
-          newAlerts.push({
-            id: `error-count-${Date.now()}`,
-            type: 'warning',
-            message: `${performance.errorCount} errors recorded in current session`,
-            timestamp: Date.now()
-          })
-        }
         
         if (!connected) {
           newAlerts.push({
@@ -152,7 +136,7 @@ export function PerformanceDashboard() {
     
     const interval = setInterval(fetchPerformanceData, 30000)
     return () => clearInterval(interval)
-  }, [connected, performance.syncCount, performance.errorCount])
+  }, [connected])
 
   const getStatusColor = (status: 'good' | 'warning' | 'critical') => {
     switch (status) {
@@ -274,16 +258,6 @@ export function PerformanceDashboard() {
             </div>
           </div>
           
-          {/* Performance Stats */}
-          <div className="bg-gray-50 p-2 rounded">
-            <div className="text-xs font-medium mb-1">Session Stats</div>
-            <div className="grid grid-cols-2 gap-1 text-xs">
-              <div>Syncs: {performance.syncCount}</div>
-              <div>Errors: {performance.errorCount}</div>
-              <div>Health: {performance.getConnectionHealth() ? "Good" : "Poor"}</div>
-              <div>Last Sync: {new Date(performance.lastSyncTime).toLocaleTimeString()}</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,23 +1,26 @@
 # Gunakan base image Node.js
 FROM node:18-alpine
 
+# Install pnpm
+RUN npm install -g pnpm
+
 # Tentukan direktori kerja di dalam container
 WORKDIR /app
 
-# Salin file package.json dan package-lock.json
-COPY package*.json ./
+# Salin file package.json dan pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm install
+RUN pnpm install
 
 # Salin semua file proyek ke container
 COPY . .
 
 # Build proyek React
-RUN npm run build
+RUN pnpm run build
 
 # Jalankan server React (development)
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
 
 # Port yang akan dibuka
 EXPOSE 3000

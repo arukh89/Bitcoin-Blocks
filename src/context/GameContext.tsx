@@ -1,14 +1,13 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type { Round, Guess, Log, User, ChatMessage, PrizeConfiguration } from '../types/game'
 import { supabaseAuth, setSupabaseContext } from '../lib/supabase-auth'
 import { supabaseDb } from '../lib/supabase-db'
-import { connectionMonitor, withSupabaseRetry } from '../lib/supabase-client'
-import { errorLogger, logDatabaseError, logNetworkError, logSystemError, logAuthError } from '../lib/error-handling'
-import { usePerformanceTracking } from '../hooks/usePerformanceTracking'
+import { supabase } from '../lib/supabase-client'
+import { APP_CONFIG, isMockMode, isRealtimeMode } from '../config/app-config'
 
-// Enhanced GameContext interface with optimistic updates and performance monitoring
+// GameContext interface
 interface GameContextType {
   user: User | null
   setUser: (user: User | null) => void
@@ -27,66 +26,82 @@ interface GameContextType {
   addChatMessage: (message: ChatMessage) => void
   connected: boolean
   client: any // Supabase client
-  mode: 'supabase'
-  
-  // Enhanced loading states with more granular control
-  loadingStates: {
-    rounds: boolean
-    guesses: boolean
-    chatMessages: boolean
-    prizeConfig: boolean
-    auth: boolean
-    connection: boolean
-  }
-  
-  // Enhanced error states with retry capabilities
-  errorStates: {
-    rounds: string | null
-    guesses: string | null
-    chatMessages: string | null
-    prizeConfig: string | null
-    auth: string | null
-    connection: string | null
-  }
-  
-  // Optimistic update functions
-  optimisticActions: {
-    addGuessOptimistically: (guess: Guess) => void
-    addChatMessageOptimistically: (message: ChatMessage) => void
-    updateRoundOptimistically: (roundId: string, updates: Partial<Round>) => void
-  }
-  
-  // Performance and monitoring
-  performance: {
-    lastSyncTime: number
-    syncCount: number
-    errorCount: number
-    getConnectionHealth: () => boolean
-  }
-  
-  // Retry functions
-  retryActions: {
-    retryLoadRounds: () => Promise<void>
-    retryLoadChatMessages: () => Promise<void>
-    retryConnection: () => Promise<void>
-  }
+  mode: 'realtime'
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
 
-// Dev admin wallet addresses - updated to use FIDs
-export const DEV_ADDRESSES = [
-  'fid-250704',
-  'fid-1107084'
-]
+// Dev admin FIDs for validation
+export const ADMIN_FIDS = [250704, 1107084]
 
 export function isDevAddress(address: string): boolean {
-  return DEV_ADDRESSES.some(dev => dev.toLowerCase() === address.toLowerCase())
+  // Extract FID from address format (fid-XXXXX)
+  const fid = address.replace('fid-', '')
+  const fidNum = parseInt(fid)
+  
+  if (isNaN(fidNum)) {
+    return false
+  }
+  
+  return ADMIN_FIDS.includes(fidNum)
+}
+
+// Data conversion functions for Supabase
+function convertRound(data: any): Round {
+  return {
+    id: data.id,
+    roundNumber: data.round_number,
+    startTime: data.start_time,
+    endTime: data.end_time,
+    prize: data.prize,
+    status: data.status,
+    blockNumber: data.block_number,
+    actualTxCount: data.actual_tx_count,
+    winningAddress: data.winning_fid,
+    blockHash: data.block_hash,
+    createdAt: data.created_at,
+    duration: data.duration
+  }
+}
+
+function convertGuess(data: any): Guess {
+  return {
+    id: data.id,
+    roundId: data.round_id,
+    address: data.user_fid,
+    username: data.username,
+    guess: data.guess_amount,
+    pfpUrl: data.pfp_url,
+    submittedAt: data.created_at
+  }
+}
+
+function convertChatMessage(data: any): ChatMessage {
+  return {
+    id: data.id,
+    roundId: data.round_id,
+    address: data.user_fid,
+    username: data.username,
+    message: data.message,
+    pfpUrl: data.pfp_url,
+    timestamp: data.created_at,
+    type: data.type
+  }
+}
+
+function convertPrizeConfig(data: any): PrizeConfiguration {
+  return {
+    id: data.id,
+    jackpotAmount: data.config_data.jackpotAmount,
+    firstPlaceAmount: data.config_data.firstPlaceAmount,
+    secondPlaceAmount: data.config_data.secondPlaceAmount,
+    currencyType: data.config_data.currencyType,
+    tokenContractAddress: data.config_data.tokenContractAddress,
+    updatedAt: data.updated_at
+  }
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const { trackInteraction, trackAsyncOperation, trackApiCall, trackError } = usePerformanceTracking('GameContext')
-  
   const [user, setUser] = useState<User | null>(null)
   const [rounds, setRounds] = useState<Round[]>([])
   const [guesses, setGuesses] = useState<Guess[]>([])
@@ -95,164 +110,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [prizeConfig, setPrizeConfig] = useState<PrizeConfiguration | null>(null)
   const [connected, setConnected] = useState<boolean>(false)
 
-  // Enhanced loading states with more granular control
-  const [loadingStates, setLoadingStates] = useState({
-    rounds: false,
-    guesses: false,
-    chatMessages: false,
-    prizeConfig: false,
-    auth: false,
-    connection: false
-  })
-
-  // Enhanced error states with retry capabilities
-  const [errorStates, setErrorStates] = useState({
-    rounds: null as string | null,
-    guesses: null as string | null,
-    chatMessages: null as string | null,
-    prizeConfig: null as string | null,
-    auth: null as string | null,
-    connection: null as string | null
-  })
-
-  // Performance monitoring state
-  const [performance, setPerformance] = useState({
-    lastSyncTime: Date.now(),
-    syncCount: 0,
-    errorCount: 0,
-    getConnectionHealth: () => connectionMonitor.getConnectionStatus()
-  })
-
-  // Refs for optimistic updates and debouncing
-  const optimisticUpdatesRef = useRef<{
-    guesses: Map<string, Guess>
-    chatMessages: Map<string, ChatMessage>
-    rounds: Map<string, Partial<Round>>
-  }>({
-    guesses: new Map(),
-    chatMessages: new Map(),
-    rounds: new Map()
-  })
-
-  const client = supabaseDb
-  const mode = 'supabase' as const
+  const client = supabase
+  const mode = 'realtime' as const
 
   // Only rounds with status 'open' are considered active
   const activeRound = rounds.find(r => r.status === 'open') || null
-
-  // Optimistic update functions
-  const optimisticActions = {
-    addGuessOptimistically: (guess: Guess) => {
-      optimisticUpdatesRef.current.guesses.set(guess.id, guess)
-      setGuesses(prev => {
-        const exists = prev.find(g => g.id === guess.id)
-        if (exists) return prev
-        return [guess, ...prev]
-      })
-    },
-
-    addChatMessageOptimistically: (message: ChatMessage) => {
-      optimisticUpdatesRef.current.chatMessages.set(message.id, message)
-      setChatMessages(prev => {
-        const exists = prev.find(m => m.id === message.id)
-        if (exists) return prev
-        return [message, ...prev].slice(0, 100) // Keep only latest 100
-      })
-    },
-
-    updateRoundOptimistically: (roundId: string, updates: Partial<Round>) => {
-      optimisticUpdatesRef.current.rounds.set(roundId, updates)
-      setRounds(prev => prev.map(round =>
-        round.id === roundId ? { ...round, ...updates } : round
-      ))
-    }
-  }
-
-  // Retry functions
-  const retryActions = {
-    retryLoadRounds: async () => {
-      setLoadingStates(prev => ({ ...prev, rounds: true }))
-      setErrorStates(prev => ({ ...prev, rounds: null }))
-      
-      try {
-        await withSupabaseRetry(async () => {
-          const roundsData = await supabaseDb.getRounds()
-          setRounds(roundsData)
-          setPerformance(prev => ({
-            ...prev,
-            lastSyncTime: Date.now(),
-            syncCount: prev.syncCount + 1
-          }))
-        })
-      } catch (error) {
-        setErrorStates(prev => ({
-          ...prev,
-          rounds: error instanceof Error ? error.message : 'Failed to load rounds'
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-      } finally {
-        setLoadingStates(prev => ({ ...prev, rounds: false }))
-      }
-    },
-
-    retryLoadChatMessages: async () => {
-      setLoadingStates(prev => ({ ...prev, chatMessages: true }))
-      setErrorStates(prev => ({ ...prev, chatMessages: null }))
-      
-      try {
-        await withSupabaseRetry(async () => {
-          const messages = await supabaseDb.getChatMessages(100)
-          setChatMessages(messages)
-          setPerformance(prev => ({
-            ...prev,
-            lastSyncTime: Date.now(),
-            syncCount: prev.syncCount + 1
-          }))
-        })
-      } catch (error) {
-        setErrorStates(prev => ({
-          ...prev,
-          chatMessages: error instanceof Error ? error.message : 'Failed to load chat messages'
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-      } finally {
-        setLoadingStates(prev => ({ ...prev, chatMessages: false }))
-      }
-    },
-
-    retryConnection: async () => {
-      setLoadingStates(prev => ({ ...prev, connection: true }))
-      setErrorStates(prev => ({ ...prev, connection: null }))
-      
-      try {
-        const isHealthy = await withSupabaseRetry(async () => {
-          const connected = connectionMonitor.getConnectionStatus()
-          if (typeof connected !== 'boolean') {
-            throw new Error('Invalid connection status')
-          }
-          return connected
-        })
-        setConnected(isHealthy)
-        
-        if (isHealthy) {
-          // Reload data if connection restored
-          await Promise.all([
-            retryActions.retryLoadRounds(),
-            retryActions.retryLoadChatMessages()
-          ])
-        }
-      } catch (error) {
-        setConnected(false)
-        setErrorStates(prev => ({
-          ...prev,
-          connection: error instanceof Error ? error.message : 'Connection failed'
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-      } finally {
-        setLoadingStates(prev => ({ ...prev, connection: false }))
-      }
-    }
-  }
 
   // ===========================================
   // INITIALIZATION
@@ -261,25 +123,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeApp = async (): Promise<void> => {
       try {
-        console.log('🚀 Initializing enhanced Bitcoin Blocks App with Supabase...')
+        console.log(`🚀 Initializing Bitcoin Blocks App in REALTIME mode...`)
         setConnected(false)
-        setLoadingStates(prev => ({ ...prev, connection: true, auth: true }))
 
-        // Start connection monitoring
-        connectionMonitor.startMonitoring()
-        connectionMonitor.addListener((isConnected) => {
-          setConnected(isConnected)
-          if (!isConnected) {
-            setErrorStates(prev => ({
-              ...prev,
-              connection: 'Connection to Supabase lost'
-            }))
-          } else {
-            setErrorStates(prev => ({ ...prev, connection: null }))
-          }
-        })
-
-        // Initialize authentication with enhanced error handling
+        // Initialize authentication
         const authUser = await supabaseAuth.initializeAuth()
         if (authUser) {
           setUser(authUser)
@@ -287,103 +134,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
           console.log('✅ User authenticated:', authUser.username)
         } else {
           console.warn('⚠️ User authentication failed or not available')
-          setErrorStates(prev => ({
-            ...prev,
-            auth: 'Authentication failed. Please try again.'
-          }))
         }
 
-        // Load initial data with retry mechanism
-        await loadInitialDataWithRetry()
+        // Load initial data
+        await loadInitialData()
 
-        // Set up enhanced real-time subscriptions
+        // Set up real-time subscriptions
         setupRealtimeSubscriptions()
 
         setConnected(true)
-        setPerformance(prev => ({
-          ...prev,
-          lastSyncTime: Date.now(),
-          syncCount: prev.syncCount + 1
-        }))
-        console.log('✅ Enhanced app initialized successfully!')
+        console.log('✅ App initialized successfully!')
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Initialization failed'
         console.error('❌ Failed to initialize app:', error)
-        
-        // Log the error using our error handling system
-        logSystemError(errorMessage, {
-          component: 'GameContext',
-          action: 'initializeApp',
-          userId: user?.address
-        }, error)
-        
         setConnected(false)
-        setErrorStates(prev => ({
-          ...prev,
-          connection: errorMessage
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-      } finally {
-        setLoadingStates(prev => ({ ...prev, connection: false, auth: false }))
       }
     }
 
     initializeApp()
 
     return () => {
-      // Cleanup subscriptions and monitoring
+      // Cleanup subscriptions
       cleanupSubscriptions()
-      connectionMonitor.stopMonitoring()
     }
-  }, [])
-
-  // Enhanced initial data loading with retry mechanism
-  const loadInitialDataWithRetry = async (): Promise<void> => {
-    const maxRetries = 3
-    let retryCount = 0
-
-    while (retryCount < maxRetries) {
-      try {
-        await loadInitialData()
-        return // Success, exit retry loop
-      } catch (error) {
-        retryCount++
-        const isLastRetry = retryCount >= maxRetries
-        
-        const errorMessage = `Initial data load attempt ${retryCount}/${maxRetries} failed`
-        console.warn(`⚠️ ${errorMessage}:`, error)
-        
-        // Log the retry attempt
-        logDatabaseError(errorMessage, {
-          component: 'GameContext',
-          action: 'loadInitialDataWithRetry',
-          additionalData: {
-            retryCount,
-            isLastRetry
-          }
-        }, error)
-        
-        if (isLastRetry) {
-          const finalError = new Error(`Failed to load initial data after ${maxRetries} attempts`)
-          logDatabaseError(finalError.message, {
-            component: 'GameContext',
-            action: 'loadInitialDataWithRetry',
-            additionalData: {
-              finalAttempt: true
-            }
-          }, finalError)
-          throw finalError
-        }
-        
-        // Exponential backoff
-        const delay = 1000 * Math.pow(2, retryCount - 1)
-        await new Promise(resolve => setTimeout(resolve, delay))
-      }
-    }
-  }
+  }, [mode])
 
   // ===========================================
-  // ENHANCED DATA LOADING
+  // DATA LOADING
   // ===========================================
 
   const loadInitialData = async (): Promise<void> => {
@@ -395,259 +172,189 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   const loadRounds = async (): Promise<void> => {
-    await trackAsyncOperation('loadRounds', async () => {
-      try {
-        setLoadingStates(prev => ({ ...prev, rounds: true }))
-        setErrorStates(prev => ({ ...prev, rounds: null }))
-
-        const roundsData = await trackApiCall('getRounds', () =>
-          withSupabaseRetry(async () => {
-            const data = await supabaseDb.getRounds()
-            return data
-          })
-        )
-      
+    try {
+      const roundsData = await supabaseDb.getRounds()
       setRounds(roundsData)
 
-        // Load guesses for active rounds with parallel processing
-        const activeRounds = roundsData.filter(r => r.status === 'open')
-        if (activeRounds.length > 0) {
-          const guessPromises = activeRounds.map(async (round) => {
-            const roundGuesses = await trackApiCall('getGuessesForRound', () =>
-              withSupabaseRetry(async () => {
-                return supabaseDb.getGuessesForRound(round.id)
-              })
-            )
-            return { roundId: round.id, guesses: roundGuesses }
-          })
+      // Load guesses for active rounds
+      const activeRounds = roundsData.filter(r => r.status === 'open')
+      if (activeRounds.length > 0) {
+        const guessPromises = activeRounds.map(async (round) => {
+          const roundGuesses = await supabaseDb.getGuessesForRound(round.id)
+          return { roundId: round.id, guesses: roundGuesses }
+        })
 
-          const guessResults = await Promise.all(guessPromises)
-          
-          setGuesses(prev => {
-            let updatedGuesses = [...prev]
-            guessResults.forEach(({ roundId, guesses: roundGuesses }) => {
-              updatedGuesses = updatedGuesses.filter(g => g.roundId !== roundId)
-              updatedGuesses = [...updatedGuesses, ...roundGuesses]
-            })
-            return updatedGuesses
+        const guessResults = await Promise.all(guessPromises)
+        
+        setGuesses(prev => {
+          let updatedGuesses = [...prev]
+          guessResults.forEach(({ roundId, guesses: roundGuesses }) => {
+            updatedGuesses = updatedGuesses.filter(g => g.roundId !== roundId)
+            updatedGuesses = [...updatedGuesses, ...roundGuesses]
           })
-        }
-
-        console.log('✅ Enhanced rounds loaded successfully')
-        setPerformance(prev => ({
-          ...prev,
-          lastSyncTime: Date.now(),
-          syncCount: prev.syncCount + 1
-        }))
-        trackInteraction('loadRounds', { roundsCount: roundsData.length })
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        console.error('❌ Error loading rounds:', error)
-        
-        trackError(error as Error, { action: 'loadRounds' })
-        
-        // Log the database error
-        logDatabaseError(errorMessage, {
-          component: 'GameContext',
-          action: 'loadRounds',
-          userId: user?.address
-        }, error)
-        
-        setErrorStates(prev => ({
-          ...prev,
-          rounds: errorMessage
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-      } finally {
-        setLoadingStates(prev => ({ ...prev, rounds: false }))
+          return updatedGuesses
+        })
       }
-    })
+
+      console.log('✅ Rounds loaded successfully')
+    } catch (error) {
+      console.error('❌ Error loading rounds:', error)
+    }
   }
 
   const loadPrizeConfiguration = async (): Promise<void> => {
     try {
-      setLoadingStates(prev => ({ ...prev, prizeConfig: true }))
-      setErrorStates(prev => ({ ...prev, prizeConfig: null }))
-
-      const config = await withSupabaseRetry(async () => {
-        return supabaseDb.getPrizeConfiguration()
-      })
-      
+      const config = await supabaseDb.getPrizeConfiguration()
       setPrizeConfig(config)
-
-      console.log('✅ Enhanced prize configuration loaded successfully')
-      setPerformance(prev => ({
-        ...prev,
-        lastSyncTime: Date.now(),
-        syncCount: prev.syncCount + 1
-      }))
+      console.log('✅ Prize configuration loaded successfully')
     } catch (error) {
       console.error('❌ Error loading prize configuration:', error)
-      setErrorStates(prev => ({
-        ...prev,
-        prizeConfig: error instanceof Error ? error.message : 'Unknown error'
-      }))
-      setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, prizeConfig: false }))
     }
   }
 
   const loadChatMessages = async (): Promise<void> => {
     try {
-      setLoadingStates(prev => ({ ...prev, chatMessages: true }))
-      setErrorStates(prev => ({ ...prev, chatMessages: null }))
-
-      const messages = await withSupabaseRetry(async () => {
-        return supabaseDb.getChatMessages(100)
-      })
-      
+      const messages = await supabaseDb.getChatMessages(100)
       setChatMessages(messages)
-
-      console.log('✅ Enhanced chat messages loaded successfully')
-      setPerformance(prev => ({
-        ...prev,
-        lastSyncTime: Date.now(),
-        syncCount: prev.syncCount + 1
-      }))
+      console.log('✅ Chat messages loaded successfully')
     } catch (error) {
       console.error('❌ Error loading chat messages:', error)
-      setErrorStates(prev => ({
-        ...prev,
-        chatMessages: error instanceof Error ? error.message : 'Unknown error'
-      }))
-      setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, chatMessages: false }))
     }
   }
 
   // ===========================================
-  // ENHANCED REALTIME SUBSCRIPTIONS
+  // REALTIME SUBSCRIPTIONS
   // ===========================================
 
   const subscriptions: Array<() => void> = []
 
   const setupRealtimeSubscriptions = (): void => {
-    console.log('🔄 Setting up enhanced realtime subscriptions...')
+    console.log('🔄 Setting up Supabase realtime subscriptions...')
     
-    // Subscribe to rounds changes with enhanced error handling
-    const roundsUnsub = supabaseDb.subscribeToRounds((round) => {
-      console.log('🔄 Realtime round update:', round)
-      
-      // Optimistic update check
-      const optimisticUpdate = optimisticUpdatesRef.current.rounds.get(round.id)
-      if (optimisticUpdate) {
-        optimisticUpdatesRef.current.rounds.delete(round.id)
-        console.log('✅ Optimistic update confirmed for round:', round.id)
-      }
-      
-      setRounds(prev => {
-        const exists = prev.find(r => r.id === round.id)
-        if (exists) {
-          return prev.map(r => r.id === round.id ? round : r)
-        } else {
-          return [round, ...prev]
+    // Subscribe to rounds changes
+    const roundsChannel = supabase
+      .channel('rounds_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rounds'
+        },
+        (payload) => {
+          console.log('🔄 Realtime round update:', payload)
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const round = convertRound(payload.new as any)
+            
+            setRounds(prev => {
+              const exists = prev.find(r => r.id === round.id)
+              if (exists) {
+                return prev.map(r => r.id === round.id ? round : r)
+              } else {
+                return [round, ...prev]
+              }
+            })
+
+            // If this is a new active round, load its guesses
+            if (round.status === 'open') {
+              supabaseDb.getGuessesForRound(round.id).then(roundGuesses => {
+                setGuesses(prev => {
+                  const filtered = prev.filter(g => g.roundId !== round.id)
+                  return [...filtered, ...roundGuesses]
+                })
+              }).catch(error => {
+                console.error('❌ Failed to load guesses for new round:', error)
+              })
+            }
+          }
         }
-      })
+      )
+      .subscribe()
 
-      // If this is a new active round, load its guesses with retry
-      if (round.status === 'open') {
-        withSupabaseRetry(async () => {
-          const roundGuesses = await supabaseDb.getGuessesForRound(round.id)
+    subscriptions.push(() => supabase.removeChannel(roundsChannel))
+
+    // Subscribe to guesses changes
+    const guessesChannel = supabase
+      .channel('guesses_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'guesses'
+        },
+        (payload) => {
+          console.log('🔄 Realtime guess update:', payload)
+          
+          const guess = convertGuess(payload.new as any)
+          
           setGuesses(prev => {
-            const filtered = prev.filter(g => g.roundId !== round.id)
-            return [...filtered, ...roundGuesses]
+            const exists = prev.find(g => g.id === guess.id)
+            if (exists) return prev
+            return [guess, ...prev]
           })
-        }).catch(error => {
-          console.error('❌ Failed to load guesses for new round:', error)
-          setErrorStates(prev => ({
-            ...prev,
-            guesses: 'Failed to load predictions for new round'
-          }))
-        })
-      }
-      
-      // Update performance metrics
-      setPerformance(prev => ({
-        ...prev,
-        lastSyncTime: Date.now(),
-        syncCount: prev.syncCount + 1
-      }))
-    })
-    subscriptions.push(roundsUnsub)
+        }
+      )
+      .subscribe()
 
-    // Subscribe to guesses changes with optimistic updates
-    const guessesUnsub = supabaseDb.subscribeToGuesses((guess) => {
-      console.log('🔄 Realtime guess update:', guess)
-      
-      // Check for optimistic update
-      const optimisticGuess = optimisticUpdatesRef.current.guesses.get(guess.id)
-      if (optimisticGuess) {
-        optimisticUpdatesRef.current.guesses.delete(guess.id)
-        console.log('✅ Optimistic guess confirmed:', guess.id)
-      }
-      
-      setGuesses(prev => {
-        const exists = prev.find(g => g.id === guess.id)
-        if (exists) return prev
-        return [guess, ...prev]
-      })
-      
-      // Update performance metrics
-      setPerformance(prev => ({
-        ...prev,
-        lastSyncTime: Date.now(),
-        syncCount: prev.syncCount + 1
-      }))
-    })
-    subscriptions.push(guessesUnsub)
+    subscriptions.push(() => supabase.removeChannel(guessesChannel))
 
-    // Subscribe to chat messages changes with enhanced filtering
-    const chatUnsub = supabaseDb.subscribeToChatMessages((message) => {
-      console.log('🔄 Realtime chat message:', message)
-      
-      // Check for optimistic update
-      const optimisticMessage = optimisticUpdatesRef.current.chatMessages.get(message.id)
-      if (optimisticMessage) {
-        optimisticUpdatesRef.current.chatMessages.delete(message.id)
-        console.log('✅ Optimistic chat message confirmed:', message.id)
-      }
-      
-      setChatMessages(prev => {
-        const exists = prev.find(m => m.id === message.id)
-        if (exists) return prev
-        return [message, ...prev].slice(0, 100) // Keep only latest 100 messages
-      })
-      
-      // Update performance metrics
-      setPerformance(prev => ({
-        ...prev,
-        lastSyncTime: Date.now(),
-        syncCount: prev.syncCount + 1
-      }))
-    })
-    subscriptions.push(chatUnsub)
+    // Subscribe to chat messages changes
+    const chatChannel = supabase
+      .channel('chat_messages_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload) => {
+          console.log('🔄 Realtime chat message:', payload)
+          
+          const message = convertChatMessage(payload.new as any)
+          
+          setChatMessages(prev => {
+            const exists = prev.find(m => m.id === message.id)
+            if (exists) return prev
+            return [message, ...prev].slice(0, 100) // Keep only latest 100 messages
+          })
+        }
+      )
+      .subscribe()
 
-    // Subscribe to prize config changes with validation
-    const prizeUnsub = supabaseDb.subscribeToPrizeConfigs((config) => {
-      console.log('🔄 Realtime prize config update:', config)
-      
-      // Validate config before applying
-      if (config && typeof config === 'object') {
-        setPrizeConfig(config)
-        setPerformance(prev => ({
-          ...prev,
-          lastSyncTime: Date.now(),
-          syncCount: prev.syncCount + 1
-        }))
-      } else {
-        console.warn('⚠️ Invalid prize config received:', config)
-      }
-    })
-    subscriptions.push(prizeUnsub)
+    subscriptions.push(() => supabase.removeChannel(chatChannel))
 
-    console.log('✅ Enhanced realtime subscriptions set up successfully')
+    // Subscribe to prize config changes
+    const prizeChannel = supabase
+      .channel('prize_configs_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prize_configs'
+        },
+        (payload) => {
+          console.log('🔄 Realtime prize config update:', payload)
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const config = convertPrizeConfig(payload.new as any)
+            
+            if (config && typeof config === 'object') {
+              setPrizeConfig(config)
+            } else {
+              console.warn('⚠️ Invalid prize config received:', config)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    subscriptions.push(() => supabase.removeChannel(prizeChannel))
+
+    console.log('✅ Supabase realtime subscriptions set up successfully')
   }
 
   const cleanupSubscriptions = (): void => {
@@ -659,7 +366,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     })
     subscriptions.length = 0 // Clear the array
-    console.log('✅ Enhanced realtime subscriptions cleaned up')
+    console.log('✅ Realtime subscriptions cleaned up')
   }
 
   // ===========================================
@@ -685,6 +392,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     try {
       console.log(`📤 [SUPABASE] Creating round...`, { roundNumber, duration, prize, blockNumber })
       
+      // Realtime mode: create in Supabase
       const round = await supabaseDb.createRound({
         roundNumber,
         startTime,
@@ -712,115 +420,52 @@ export function GameProvider({ children }: { children: ReactNode }) {
     guess: number,
     pfpUrl: string
   ): Promise<boolean> => {
-    return await trackAsyncOperation('submitGuess', async () => {
-      if (!connected) {
-        console.warn(`⚠️ [SUPABASE] Not connected`)
-        return false
-      }
+    if (!connected) {
+      console.warn(`⚠️ [SUPABASE] Not connected`)
+      return false
+    }
 
-      const round = rounds.find(r => r.id === roundId)
-      if (!round || round.status !== 'open') {
-        console.warn(`⚠️ [SUPABASE] Round not open:`, { roundId, status: round?.status })
-        return false
-      }
+    const round = rounds.find(r => r.id === roundId)
+    if (!round || round.status !== 'open') {
+      console.warn(`⚠️ [SUPABASE] Round not open:`, { roundId, status: round?.status })
+      return false
+    }
 
-      const now = Date.now()
-      if (now >= round.endTime) {
-        console.warn(`⚠️ [SUPABASE] Round time expired`)
-        return false
-      }
+    const now = Date.now()
+    if (now >= round.endTime) {
+      console.warn(`⚠️ [SUPABASE] Round time expired`)
+      return false
+    }
 
-      const hasGuessed = guesses.some(g => g.roundId === roundId && g.address.toLowerCase() === address.toLowerCase())
-      if (hasGuessed) {
-        console.warn(`⚠️ [SUPABASE] User already guessed`)
-        return false
-      }
+    const hasGuessed = guesses.some(g => g.roundId === roundId && g.address.toLowerCase() === address.toLowerCase())
+    if (hasGuessed) {
+      console.warn(`⚠️ [SUPABASE] User already guessed`)
+      return false
+    }
 
-      try {
-        const userFid = address.replace('fid-', '')
-        
-        // Create optimistic guess
-        const optimisticGuess: Guess = {
-          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          roundId,
-          address,
-          username,
-          guess,
-          pfpUrl,
-          submittedAt: Date.now()
-        }
-        
-        // Apply optimistic update
-        optimisticActions.addGuessOptimistically(optimisticGuess)
-        
-        const result = await trackApiCall('submitGuess', () =>
-          withSupabaseRetry(async () => {
-            return supabaseDb.submitGuess({
-              roundId,
-              userFid,
-              username,
-              guessAmount: guess,
-              pfpUrl
-            })
-          })
-        )
-        
-        if (!result) {
-          // Remove optimistic update on failure
-          setGuesses(prev => prev.filter(g => g.id !== optimisticGuess.id))
-          console.error(`❌ [SUPABASE] Failed to submit guess`)
-          setErrorStates(prev => ({
-            ...prev,
-            guesses: 'Failed to submit prediction. Please try again.'
-          }))
-          setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-          return false
-        }
-        
-        console.log(`✅ [SUPABASE] Guess submitted with optimistic update!`)
-        setPerformance(prev => ({
-          ...prev,
-          lastSyncTime: Date.now(),
-          syncCount: prev.syncCount + 1
-        }))
-        
-        trackInteraction('submitGuess', {
-          roundId,
-          guessAmount: guess,
-          success: true
-        })
-        
-        return true
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to submit prediction'
-        console.error(`❌ [SUPABASE] Failed to submit guess:`, error)
-        
-        trackError(error as Error, {
-          action: 'submitGuess',
-          roundId,
-          guessAmount: guess
-        })
-        
-        // Log the database error
-        logDatabaseError(errorMessage, {
-          component: 'GameContext',
-          action: 'submitGuess',
-          additionalData: {
-            roundId,
-            userFid: address.replace('fid-', ''),
-            guessAmount: guess
-          }
-        }, error)
-        
-        setErrorStates(prev => ({
-          ...prev,
-          guesses: errorMessage
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
+    try {
+      const userFid = address.replace('fid-', '')
+      
+      const result = await supabaseDb.submitGuess({
+        roundId,
+        userFid,
+        username,
+        guessAmount: guess,
+        pfpUrl
+      })
+      
+      if (!result) {
+        console.error(`❌ [SUPABASE] Failed to submit guess`)
         return false
       }
-    })
-  }, [connected, rounds, guesses, trackAsyncOperation, trackApiCall, trackInteraction, trackError])
+      
+      console.log(`✅ [SUPABASE] Guess submitted successfully!`)
+      return true
+    } catch (error) {
+      console.error(`❌ [SUPABASE] Failed to submit guess:`, error)
+      return false
+    }
+  }, [connected, rounds, guesses])
 
   const endRound = useCallback(async (roundId: string): Promise<boolean> => {
     if (!connected) {
@@ -883,91 +528,38 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [guesses])
 
   const addChatMessage = useCallback(async (message: ChatMessage): Promise<void> => {
-    return await trackAsyncOperation('addChatMessage', async () => {
-      console.log(`💬 [SUPABASE] Enhanced addChatMessage called`, { message, connected })
+    console.log(`💬 [SUPABASE] addChatMessage called`, { message, connected })
+    
+    if (!connected) {
+      const warning = 'Not connected to database'
+      console.warn(`⚠️ [SUPABASE]`, warning)
+      throw new Error(warning)
+    }
+    
+    try {
+      console.log(`📤 [SUPABASE] Sending chat message...`)
       
-      if (!connected) {
-        const warning = 'Not connected to database'
-        console.warn(`⚠️ [SUPABASE]`, warning)
-        setErrorStates(prev => ({ ...prev, chatMessages: warning }))
-        throw new Error(warning)
+      const userFid = message.address.replace('fid-', '')
+      
+      const result = await supabaseDb.addChatMessage({
+        userFid,
+        username: message.username,
+        message: message.message,
+        type: message.type,
+        roundId: message.roundId,
+        pfpUrl: message.pfpUrl
+      })
+      
+      if (!result) {
+        throw new Error('Failed to send chat message')
       }
       
-      try {
-        console.log(`📤 [SUPABASE] Sending enhanced chat message...`)
-        
-        const userFid = message.address.replace('fid-', '')
-        
-        // Create optimistic chat message
-        const optimisticMessage: ChatMessage = {
-          ...message,
-          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: Date.now()
-        }
-        
-        // Apply optimistic update
-        optimisticActions.addChatMessageOptimistically(optimisticMessage)
-        
-        const result = await trackApiCall('addChatMessage', () =>
-          withSupabaseRetry(async () => {
-            return supabaseDb.addChatMessage({
-              userFid,
-              username: message.username,
-              message: message.message,
-              type: message.type,
-              roundId: message.roundId,
-              pfpUrl: message.pfpUrl
-            })
-          })
-        )
-        
-        if (!result) {
-          // Remove optimistic update on failure
-          setChatMessages(prev => prev.filter(m => m.id !== optimisticMessage.id))
-          throw new Error('Failed to send chat message')
-        }
-        
-        console.log(`✅ [SUPABASE] Enhanced chat message sent with optimistic update!`)
-        setPerformance(prev => ({
-          ...prev,
-          lastSyncTime: Date.now(),
-          syncCount: prev.syncCount + 1
-        }))
-        
-        trackInteraction('addChatMessage', {
-          messageType: message.type,
-          messageLength: message.message.length,
-          success: true
-        })
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to send message'
-        console.error(`❌ [SUPABASE] Failed to send chat message:`, error)
-        
-        trackError(error as Error, {
-          action: 'addChatMessage',
-          messageType: message.type,
-          messageLength: message.message.length
-        })
-        
-        // Log the database error
-        logDatabaseError(errorMessage, {
-          component: 'GameContext',
-          action: 'addChatMessage',
-          additionalData: {
-            messageType: message.type,
-            userFid: message.address.replace('fid-', '')
-          }
-        }, error)
-        
-        setErrorStates(prev => ({
-          ...prev,
-          chatMessages: errorMessage
-        }))
-        setPerformance(prev => ({ ...prev, errorCount: prev.errorCount + 1 }))
-        throw error
-      }
-    })
-  }, [connected, trackAsyncOperation, trackApiCall, trackInteraction, trackError])
+      console.log(`✅ [SUPABASE] Chat message sent successfully!`)
+    } catch (error) {
+      console.error(`❌ [SUPABASE] Failed to send chat message:`, error)
+      throw error
+    }
+  }, [connected])
 
   // Auto-close rounds when end time is reached
   useEffect(() => {
@@ -1008,12 +600,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     addChatMessage,
     connected,
     client,
-    mode,
-    loadingStates,
-    errorStates,
-    optimisticActions,
-    performance,
-    retryActions
+    mode
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

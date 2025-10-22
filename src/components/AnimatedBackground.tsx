@@ -1,10 +1,8 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
-interface AnimatedBackgroundProps {}
-
-export function AnimatedBackground({}: AnimatedBackgroundProps): React.ReactElement {
+export function AnimatedBackground(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -27,8 +25,8 @@ export function AnimatedBackground({}: AnimatedBackgroundProps): React.ReactElem
       opacity: number
 
       constructor() {
-        this.x = Math.random() * (canvas?.width || 800)
-        this.y = Math.random() * (canvas?.height || 600)
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
         this.size = Math.random() * 2 + 0.5
         this.speedX = Math.random() * 0.5 - 0.25
         this.speedY = Math.random() * 0.5 - 0.25
@@ -39,13 +37,10 @@ export function AnimatedBackground({}: AnimatedBackgroundProps): React.ReactElem
         this.x += this.speedX
         this.y += this.speedY
 
-        const canvasWidth = canvas?.width || 800
-        const canvasHeight = canvas?.height || 600
-
-        if (this.x > canvasWidth) this.x = 0
-        if (this.x < 0) this.x = canvasWidth
-        if (this.y > canvasHeight) this.y = 0
-        if (this.y < 0) this.y = canvasHeight
+        if (this.x > canvas.width) this.x = 0
+        if (this.x < 0) this.x = canvas.width
+        if (this.y > canvas.height) this.y = 0
+        if (this.y < 0) this.y = canvas.height
       }
 
       draw(): void {
@@ -67,8 +62,8 @@ export function AnimatedBackground({}: AnimatedBackgroundProps): React.ReactElem
       opacity: number
 
       constructor() {
-        this.x = Math.random() * (canvas?.width || 800)
-        this.y = Math.random() * (canvas?.height || 600)
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
         this.size = Math.random() * 30 + 20
         this.angle = Math.random() * Math.PI * 2
         this.speed = Math.random() * 0.002 + 0.001
@@ -80,13 +75,10 @@ export function AnimatedBackground({}: AnimatedBackgroundProps): React.ReactElem
         this.x += Math.cos(this.angle) * 0.5
         this.y += Math.sin(this.angle) * 0.5
 
-        const canvasWidth = canvas?.width || 800
-        const canvasHeight = canvas?.height || 600
-
-        if (this.x > canvasWidth + 50) this.x = -50
-        if (this.x < -50) this.x = canvasWidth + 50
-        if (this.y > canvasHeight + 50) this.y = -50
-        if (this.y < -50) this.y = canvasHeight + 50
+        if (this.x > canvas.width + 50) this.x = -50
+        if (this.x < -50) this.x = canvas.width + 50
+        if (this.y > canvas.height + 50) this.y = -50
+        if (this.y < -50) this.y = canvas.height + 50
       }
 
       draw(): void {

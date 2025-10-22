@@ -1,175 +1,79 @@
 'use client'
 import React from 'react'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 
-import { AuthButton } from '../components/AuthButton'
-import { GlobalChat } from '../components/GlobalChat'
-import { AdminPanel } from '../components/AdminPanel'
-import { Countdown } from '../components/Countdown'
-import { GuessForm } from '../components/GuessForm'
-import { Leaderboard } from '../components/Leaderboard'
-import { AllPredictions } from '../components/AllPredictions'
-import { LoadingScreen } from '../components/LoadingScreen'
-import { AnimatedBackground } from '../components/AnimatedBackground'
-import { RecentBlocks } from '../components/RecentBlocks'
-import { DatabaseStatusBanner } from '../components/DatabaseStatusBanner'
-import { CurrentRound } from '../components/CurrentRound'
-import { PrizesAndRulesSection } from '../components/PrizesAndRulesSection'
-import { PerformanceDashboard } from '../components/PerformanceDashboard'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
-import { Button } from '../components/ui/button'
-import { useGame, isDevAddress } from '../context/GameContext'
+import { AuthButton } from '@/components/AuthButton'
+import { GlobalChat } from '@/components/GlobalChat'
+import { AdminPanel } from '@/components/AdminPanel'
+import { Countdown } from '@/components/Countdown'
+import { GuessForm } from '@/components/GuessForm'
+import { Leaderboard } from '@/components/Leaderboard'
+import { AllPredictions } from '@/components/AllPredictions'
+import { LoadingScreen } from '@/components/LoadingScreen'
+import { AnimatedBackground } from '@/components/AnimatedBackground'
+import { RecentBlocks } from '@/components/RecentBlocks'
+import { DatabaseStatusBanner } from '@/components/DatabaseStatusBanner'
+import { CurrentRound } from '@/components/CurrentRound'
+import { PrizesAndRulesSection } from '@/components/PrizesAndRulesSection'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useGame } from '@/context/GameContext'
 import { sdk } from "@farcaster/miniapp-sdk"
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center p-8">
-            <h2 className="text-2xl font-bold text-red-400 mb-4">Something went wrong</h2>
-            <p className="text-gray-300 mb-4">Please refresh the page to try again</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    return this.props.children
-  }
-}
 
 export default function Home(): React.ReactElement {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [showAuthDialog, setShowAuthDialog] = useState<boolean>(false)
   const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false)
-  const [sdkInitialized, setSdkInitialized] = useState<boolean>(false)
-  const [initError, setInitError] = useState<string | null>(null)
+  const { activeRound, getGuessesForRound, connected, user, prizeConfig } = useGame()
   
-  const {
-    activeRound,
-    getGuessesForRound,
-    connected,
-    user,
-    prizeConfig,
-    loadingStates,
-    errorStates,
-    performance,
-    retryActions
-  } = useGame()
-
-  // Memoize participant count to prevent unnecessary recalculations
-  const participantCount = useMemo(() => {
-    return activeRound ? getGuessesForRound(activeRound.id).length : 0
-  }, [activeRound, getGuessesForRound])
-
-  // Enhanced Farcaster SDK initialization with retry mechanism
-  const initializeFarcaster = useCallback(async () => {
-    const maxRetries = 3
-    let retryCount = 0
-
-    while (retryCount < maxRetries) {
+  useEffect(() => {
+    const initializeFarcaster = async () => {
       try {
-        console.log(`🔄 Initializing Farcaster SDK (attempt ${retryCount + 1}/${maxRetries})`)
-        
-        // Wait for document to be ready
+        await new Promise(resolve => setTimeout(resolve, 100))
         if (document.readyState !== 'complete') {
-          await new Promise<void>(resolve => {
+          await new Promise(resolve => {
             if (document.readyState === 'complete') {
-              resolve()
+              resolve(void 0)
             } else {
-              window.addEventListener('load', () => resolve(), { once: true })
+              window.addEventListener('load', () => resolve(void 0), { once: true })
             }
           })
         }
 
-        // Add small delay to ensure everything is loaded
-        await new Promise(resolve => setTimeout(resolve, 100))
-
         await sdk.actions.ready()
-        console.log("✅ Farcaster SDK initialized successfully")
-        setSdkInitialized(true)
-        setInitError(null)
-        return
+        console.log("Farcaster SDK initialized successfully - app fully loaded")
       } catch (error) {
-        retryCount++
-        const isLastRetry = retryCount >= maxRetries
-        
-        console.error(`❌ Farcaster SDK initialization attempt ${retryCount} failed:`, error)
-        
-        if (isLastRetry) {
-          setInitError('Failed to initialize Farcaster SDK. Some features may not work properly.')
-          console.error('All Farcaster SDK initialization attempts failed')
-        } else {
-          // Exponential backoff
-          const delay = 1000 * Math.pow(2, retryCount - 1)
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
+        console.error('Failed to initialize Farcaster SDK:', error)
+        setTimeout(async () => {
+          try {
+            await sdk.actions.ready()
+            console.log('Farcaster SDK initialized on retry')
+          } catch (retryError) {
+            console.error('Farcaster SDK retry failed:', retryError)
+          }
+        }, 1000)
       }
     }
+    initializeFarcaster()
   }, [])
 
-  // Enhanced loading state management
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Initialize Farcaster SDK
-        await initializeFarcaster()
-        
-        // Show loading screen for minimum time to prevent flickering
-        const minLoadingTime = 2000
-        const startTime = Date.now()
-        
-        const timer = setTimeout(() => {
-          const elapsed = Date.now() - startTime
-          const remainingTime = Math.max(0, minLoadingTime - elapsed)
-          
-          setTimeout(() => {
-            setIsLoading(false)
-            // Show auth dialog after loading if user not authenticated
-            if (!user && !initError) {
-              setShowAuthDialog(true)
-            }
-          }, remainingTime)
-        }, 500)
-
-        return () => clearTimeout(timer)
-      } catch (error) {
-        console.error('App initialization failed:', error)
-        setInitError('App initialization failed')
-        setIsLoading(false)
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+      // Show auth dialog after loading if user not authenticated
+      if (!user) {
+        setShowAuthDialog(true)
       }
-    }
+    }, 3000)
 
-    initializeApp()
-  }, [initializeFarcaster, user, initError])
+    return () => clearTimeout(timer)
+  }, [user])
 
+  const participantCount = activeRound ? getGuessesForRound(activeRound.id).length : 0
 
   return (
     <>
@@ -191,8 +95,7 @@ export default function Home(): React.ReactElement {
         >
           <AnimatedBackground />
           
-          {/* Database Status Banner */}
-          <DatabaseStatusBanner />
+          {/* Database Status Banner - Removed to hide mode indicator */}
           
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/30 pointer-events-none" />
@@ -345,8 +248,8 @@ export default function Home(): React.ReactElement {
               <RecentBlocks />
             </motion.div>
 
-            {/* Admin Toggle Button - Only visible for admin users */}
-            {user && isDevAddress(user.address) && (
+            {/* Admin Panel Toggle Button */}
+            {user?.isAdmin && (
               <motion.div
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -355,22 +258,19 @@ export default function Home(): React.ReactElement {
               >
                 <Button
                   onClick={() => setShowAdminPanel(!showAdminPanel)}
-                  className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold px-6 py-3 transition-all"
+                  className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold px-6 py-3 shadow-2xl shadow-yellow-500/30"
                 >
-                  {showAdminPanel ? '❌ Hide Admin Panel' : '🛠️ Show Admin Panel'}
+                  {showAdminPanel ? '🔼 Hide Admin Panel' : '🛠️ Show Admin Panel'}
                 </Button>
               </motion.div>
             )}
 
-            {/* Admin Panel - Integrated Below Recent Blocks (Only for Admin) */}
-            {showAdminPanel && <AdminPanel />}
+            {/* Admin Panel - Conditionally shown */}
+            {user?.isAdmin && showAdminPanel && <AdminPanel />}
 
           </div>
         </motion.main>
       )}
-      
-      {/* Performance Dashboard - Always visible for monitoring */}
-      <PerformanceDashboard />
     </>
   )
 }

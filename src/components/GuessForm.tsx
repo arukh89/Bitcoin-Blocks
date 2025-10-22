@@ -15,10 +15,7 @@ export function GuessForm(): React.ReactElement {
     activeRound,
     submitGuess,
     hasUserGuessed,
-    connected,
-    loadingStates,
-    errorStates,
-    optimisticActions
+    connected
   } = useGame()
   const { toast } = useToast()
   const [guess, setGuess] = useState<string>('')

@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
   "functions": {
     "src/app/api/**/*.ts": {
       "runtime": "nodejs18.x"
@@ -29,6 +28,5 @@
       "NEXT_PUBLIC_API_BASE_URL": "https://bitcoin-blocks.vercel.app/api"
     }
   },
-  "regions": ["pdx1"],
-  "framework": "nextjs"
+  "regions": ["pdx1"]
 }

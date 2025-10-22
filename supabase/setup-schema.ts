@@ -8,7 +8,7 @@ export async function setupDatabaseSchema() {
 
   try {
     // Create admin_fids table
-    const { error: adminFidsError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: adminFidsError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS admin_fids (
           fid TEXT PRIMARY KEY,
@@ -28,7 +28,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create user_sessions table
-    const { error: userSessionsError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: userSessionsError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS user_sessions (
           fid TEXT PRIMARY KEY,
@@ -49,7 +49,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create rounds table
-    const { error: roundsError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: roundsError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS rounds (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -80,7 +80,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create guesses table
-    const { error: guessesError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: guessesError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS guesses (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -106,7 +106,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create chat_messages table
-    const { error: chatMessagesError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: chatMessagesError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS chat_messages (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -133,7 +133,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create prize_configs table
-    const { error: prizeConfigsError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: prizeConfigsError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS prize_configs (
           id SERIAL PRIMARY KEY,
@@ -151,7 +151,7 @@ export async function setupDatabaseSchema() {
     }
 
     // Create audit_logs table
-    const { error: auditLogsError } = await supabaseAdmin.rpc('exec_sql', {
+    const { error: auditLogsError } = await (supabaseAdmin as any).rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS audit_logs (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -187,7 +187,7 @@ async function insertInitialData() {
   const now = Math.floor(Date.now())
 
   // Insert initial admin FIDs
-  const { error: adminInsertError } = await supabaseAdmin
+  const { error: adminInsertError } = await (supabaseAdmin as any)
     .from('admin_fids')
     .upsert([
       {
@@ -211,7 +211,7 @@ async function insertInitialData() {
   }
 
   // Insert default prize configuration
-  const { error: prizeConfigInsertError } = await supabaseAdmin
+  const { error: prizeConfigInsertError } = await (supabaseAdmin as any)
     .from('prize_configs')
     .upsert({
       config_data: {

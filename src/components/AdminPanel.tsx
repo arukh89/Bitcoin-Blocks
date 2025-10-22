@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
@@ -10,9 +10,9 @@ import { Badge } from './ui/badge'
 import { useGame, isDevAddress } from '../context/GameContext'
 import { useToast } from '../hooks/use-toast'
 import { APP_CONFIG } from '../config/app-config'
-import { WalletBalanceDisplay } from './WalletBalanceDisplay'
 
-export function AdminPanel(): React.ReactElement {
+
+export function AdminPanel() {
   const { user, createRound, endRound, updateRoundResult, activeRound, rounds, getGuessesForRound, connected, client, prizeConfig } = useGame()
   const { toast } = useToast()
   const [loading, setLoading] = useState<boolean>(false)
@@ -44,10 +44,18 @@ export function AdminPanel(): React.ReactElement {
     }
   }, [prizeConfig])
 
-  // Only show to admin addresses
-  if (!user || !isDevAddress(user.address)) {
+  // Only show to admin users (check already done in parent, but double-check for safety)
+  if (!user?.isAdmin) {
+    console.log('⚠️ AdminPanel: User is not admin', { user })
     return <></>
   }
+  
+  console.log('✅ AdminPanel rendered for admin:', {
+    user,
+    connected,
+    hasClient: !!client,
+    activeRound
+  })
 
   const handleStartRound = async (): Promise<void> => {
     if (!roundNumber) {
@@ -130,7 +138,7 @@ export function AdminPanel(): React.ReactElement {
       setDuration('10')
       
       // Start polling mempool.space for target block
-      if (APP_CONFIG.mode !== 'mock' && blockNum) {
+      if (blockNum) {
         pollForTargetBlock(blockNum)
       }
     } catch (error) {
@@ -246,16 +254,43 @@ export function AdminPanel(): React.ReactElement {
         return
       }
       
-      // Real-time mode: Fetch from mempool.space API
-      const blockRes = await fetch(`/api/mempool?action=block-at-time&timestamp=${Math.floor(closedRound.endTime / 1000)}`)
+      // Real-time mode: Fetch from mempool.space via proxy
+      const blockRes = await fetch('/api/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          protocol: 'https',
+          origin: 'mempool.space',
+          path: `/api/block-height/${closedRound.blockNumber}`,
+          method: 'GET',
+          headers: {}
+        })
+      })
 
       if (!blockRes.ok) {
         throw new Error(`Block #${closedRound.blockNumber} not found yet. Try again later.`)
       }
 
-      const blockData = await blockRes.json() as { blockHash: string; txCount: number }
-      const actualTxCount = blockData.txCount
-      const blockHash = blockData.blockHash
+      const blockHash = await blockRes.text() as string
+
+      const txRes = await fetch('/api/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          protocol: 'https',
+          origin: 'mempool.space',
+          path: `/api/block/${blockHash}/txids`,
+          method: 'GET',
+          headers: {}
+        })
+      })
+
+      if (!txRes.ok) {
+        throw new Error('Failed to fetch transactions from mempool.space')
+      }
+
+      const txids = await txRes.json() as string[]
+      const actualTxCount = txids.length
 
       // Find winners
       const roundGuesses = getGuessesForRound(closedRound.id)
@@ -373,17 +408,23 @@ export function AdminPanel(): React.ReactElement {
     try {
       setLoading(true)
       
-      // Save prize configuration using Supabase
-      const success = await client.updatePrizeConfiguration({
-        jackpotAmount: jackpotAmount,
-        firstPlaceAmount: firstPrize,
-        secondPlaceAmount: secondPrize,
-        currencyType: prizeCurrency.trim(),
-        tokenContractAddress: '' // tokenContractAddress - empty for now
-      })
-      
-      if (!success) {
-        throw new Error('Failed to save prize configuration')
+      // Save prize configuration using Supabase client
+      const { error } = await (client as any)
+        .from('prize_configs')
+        .insert({
+          config_data: {
+            jackpotAmount: jackpotNum.toString(),
+            firstPlaceAmount: firstNum.toString(),
+            secondPlaceAmount: secondNum.toString(),
+            currencyType: prizeCurrency.trim(),
+            tokenContractAddress: '' // empty for now
+          },
+          updated_at: Date.now(),
+          version: 1 // Will be auto-incremented by DB
+        })
+
+      if (error) {
+        throw new Error(`Failed to save prize config: ${error.message}`)
       }
 
       toast({
@@ -403,23 +444,27 @@ export function AdminPanel(): React.ReactElement {
 
   // Poll mempool.space to check if target block is available
   const pollForTargetBlock = async (targetBlock: number): Promise<void> => {
-    if (APP_CONFIG.mode === 'mock') return
     
     setCheckingBlock(true)
     setBlockAvailable(false)
     
     const checkBlock = async (): Promise<boolean> => {
       try {
-        const response = await fetch(`/api/mempool?action=recent-blocks`)
+        const response = await fetch('/api/proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            protocol: 'https',
+            origin: 'mempool.space',
+            path: `/api/block-height/${targetBlock}`,
+            method: 'GET',
+            headers: {}
+          })
+        })
         
         if (response.ok) {
-          const blocks = await response.json() as Array<{ height: number }>
-          const blockExists = blocks.some(block => block.height === targetBlock)
-          
-          if (blockExists) {
-            console.log(`✅ Block #${targetBlock} is now available on mempool.space!`)
-            return true
-          }
+          console.log(`✅ Block #${targetBlock} is now available on mempool.space!`)
+          return true
         }
         return false
       } catch (error) {
@@ -495,15 +540,15 @@ export function AdminPanel(): React.ReactElement {
                 <div className="text-[10px] text-yellow-300 font-normal">Manage rounds & configure prizes</div>
               </div>
             </div>
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={`${
                 APP_CONFIG.mode === 'mock'
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-400/50'
-                  : 'bg-red-500/20 text-red-300 border-red-400/50'
-              } text-xs px-3 py-1`}
+                  ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50'
+                  : 'bg-green-500/20 text-green-300 border-green-400/50'
+              } px-3 py-1.5 text-xs font-semibold`}
             >
-              {APP_CONFIG.mode === 'mock' ? '🧪 MOCK MODE' : '🔴 REAL-TIME'}
+              {'🔴 REAL-TIME'}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -575,10 +620,7 @@ export function AdminPanel(): React.ReactElement {
                 <h3 className="text-base font-bold text-white">Manage Round</h3>
               </div>
               <p className="text-xs text-gray-400">
-                {APP_CONFIG.mode === 'mock' 
-                  ? 'End round, simulate & post results'
-                  : 'End round or fetch results from mempool.space (auto-closes when target block available)'
-                }
+                {'End round or fetch results from mempool.space (auto-closes when target block available)'}
               </p>
 
               {/* Round Status Info */}
@@ -610,7 +652,7 @@ export function AdminPanel(): React.ReactElement {
                   </div>
                   
                   {/* Block Check Status */}
-                  {checkingBlock && APP_CONFIG.mode !== 'mock' && (
+                  {checkingBlock && (
                     <div className="glass-card-dark p-3 rounded-lg border border-blue-500/30">
                       <p className="text-xs text-blue-300 text-center">
                         🔍 Checking mempool.space for Block #{activeRound.blockNumber}...
@@ -618,7 +660,7 @@ export function AdminPanel(): React.ReactElement {
                     </div>
                   )}
                   
-                  {blockAvailable && APP_CONFIG.mode !== 'mock' && (
+                  {blockAvailable && (
                     <div className="glass-card-dark p-3 rounded-lg border border-green-500/30">
                       <p className="text-xs text-green-300 text-center">
                         ✅ Block #{activeRound.blockNumber} found on mempool.space!
@@ -657,10 +699,7 @@ export function AdminPanel(): React.ReactElement {
                 >
                   {loading ? '⚙️' : '📡'}
                   <span className="ml-1 text-xs">
-                    {loading 
-                      ? (APP_CONFIG.mode === 'mock' ? 'Simulating...' : 'Fetching...') 
-                      : 'Post Results'
-                    }
+                    {loading ? 'Fetching...' : 'Post Results'}
                   </span>
                 </Button>
               </div>
@@ -735,14 +774,7 @@ export function AdminPanel(): React.ReactElement {
                 />
               </div>
 
-              {/* Wallet Balance Display */}
-              <div className="space-y-2">
-                <Label className="text-gray-300 text-sm font-bold">💳 Admin Wallet Balances</Label>
-                <WalletBalanceDisplay walletAddress={user.address} />
-                <p className="text-[10px] text-gray-500 text-center">
-                  📍 Base Chain  | 💰 Available for rewards: ETH, USDC, $SECONDS
-                </p>
-              </div>
+              
 
               {/* Save Prize Config Button */}
               <Button
@@ -765,7 +797,6 @@ export function AdminPanel(): React.ReactElement {
           <div className="glass-card-dark p-4 rounded-xl border border-cyan-500/30">
             <p className="text-sm text-cyan-300">
               <span className="font-bold">ℹ️ Auto-Announcement:</span> Starting rounds and posting results will automatically announce on Farcaster with formatted messages.
-              {APP_CONFIG.mode === 'mock' && <span className="text-purple-300 ml-2">(Mock mode: announcements logged to console)</span>}
             </p>
           </div>
         </CardContent>

@@ -163,7 +163,17 @@ export async function getUserPermissions(userFid: string): Promise<string[]> {
         .eq('fid', userFid)
         .single()
       
-      return data?.permissions || ['read', 'write']
+      // Handle case where data might be null by explicitly typing it
+      const adminData = data as { permissions: Record<string, any> } | null
+      
+      if (!adminData) {
+        return ['read', 'write']
+      }
+      
+      // Convert permissions from Record<string, any> to string[]
+      // Assuming permissions is stored as an object with permission keys
+      const permissions = adminData.permissions ? Object.keys(adminData.permissions) : []
+      return permissions.length > 0 ? permissions : ['read', 'write']
     }
     
     return ['read']

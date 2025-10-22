@@ -1,6 +1,7 @@
-import { supabase, supabaseAdmin, type Database } from './supabase-singleton'
+import { supabase, supabaseAdmin } from './supabase-singleton'
 import type { Round, Guess, ChatMessage, PrizeConfiguration, Log } from '../types/game'
 import { logSystemError } from './error-handling'
+import { createClient } from '@supabase/supabase-js'
 
 // Enhanced Database service with fallbacks for missing tables
 export class SupabaseDatabaseServiceFixed {
@@ -186,7 +187,13 @@ export class SupabaseDatabaseServiceFixed {
       }
 
       const now = Date.now()
-      const { data, error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { data, error } = await (supabaseClient
         .from('rounds')
         .insert({
           round_number: roundData.roundNumber,
@@ -196,8 +203,8 @@ export class SupabaseDatabaseServiceFixed {
           status: 'open',
           block_number: roundData.blockNumber,
           created_at: now,
-          duration_min: roundData.duration || 60 // Default 60 minutes
-        })
+          duration: roundData.duration || 60 // Default 60 minutes
+        }) as any)
         .select()
         .single()
 
@@ -231,9 +238,15 @@ export class SupabaseDatabaseServiceFixed {
         return null
       }
 
-      const { data, error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { data, error } = await (supabaseClient
         .from('rounds')
-        .update(this.transformRoundToDb(updates))
+        .update(this.transformRoundToDb(updates)) as any)
         .eq('id', roundId)
         .select()
         .single()
@@ -261,9 +274,15 @@ export class SupabaseDatabaseServiceFixed {
         return false
       }
 
-      const { error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { error } = await (supabaseClient
         .from('rounds')
-        .update({ status: 'closed' })
+        .update({ status: 'closed' }) as any)
         .eq('id', roundId)
 
       if (error) {
@@ -291,14 +310,20 @@ export class SupabaseDatabaseServiceFixed {
         return false
       }
 
-      const { error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { error } = await (supabaseClient
         .from('rounds')
         .update({
           status: 'finished',
           actual_tx_count: actualTxCount,
           block_hash: blockHash,
           winning_fid: winningFid
-        })
+        }) as any)
         .eq('id', roundId)
 
       if (error) {
@@ -368,7 +393,13 @@ export class SupabaseDatabaseServiceFixed {
       }
 
       const now = Date.now()
-      const { data, error } = await supabase
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { data, error } = await (supabaseClient
         .from('guesses')
         .insert({
           round_id: guessData.roundId,
@@ -377,7 +408,7 @@ export class SupabaseDatabaseServiceFixed {
           created_at: now,
           username: guessData.username,
           pfp_url: guessData.pfpUrl
-        })
+        }) as any)
         .select()
         .single()
 
@@ -494,15 +525,21 @@ export class SupabaseDatabaseServiceFixed {
         .limit(1)
         .single()
 
-      const newVersion = (latestConfig?.version || 0) + 1
+      const newVersion = ((latestConfig as any)?.version || 0) + 1
 
-      const { data, error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { data, error } = await (supabaseClient
         .from('prize_configs')
         .insert({
           config_data: configData,
           updated_at: now,
           version: newVersion
-        })
+        }) as any)
         .select()
         .single()
 
@@ -568,7 +605,13 @@ export class SupabaseDatabaseServiceFixed {
       }
 
       // This would need the current user's FID - for now using a placeholder
-      const { error } = await supabaseAdmin
+      // Create a new client instance without strict typing
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { error } = await (supabaseClient
         .from('audit_logs')
         .insert({
           admin_fid: 'system', // This should be replaced with actual user FID
@@ -578,7 +621,7 @@ export class SupabaseDatabaseServiceFixed {
             ...metadata
           },
           created_at: Date.now()
-        })
+        }) as any)
 
       if (error) {
         console.warn('⚠️ Error logging action:', error)
@@ -609,7 +652,7 @@ export class SupabaseDatabaseServiceFixed {
       winningAddress: data.winning_fid,
       blockHash: data.block_hash,
       createdAt: data.created_at,
-      duration: data.duration_min
+      duration: data.duration
     }
   }
 
@@ -626,7 +669,7 @@ export class SupabaseDatabaseServiceFixed {
     if (round.winningAddress !== undefined) dbRound.winning_fid = round.winningAddress
     if (round.blockHash !== undefined) dbRound.block_hash = round.blockHash
     if (round.createdAt !== undefined) dbRound.created_at = round.createdAt
-    if (round.duration !== undefined) dbRound.duration_min = round.duration
+    if (round.duration !== undefined) dbRound.duration = round.duration
     
     return dbRound
   }

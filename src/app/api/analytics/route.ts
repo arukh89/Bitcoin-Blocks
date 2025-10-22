@@ -103,11 +103,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           supabaseAdmin.from('rounds').select('id', { count: 'exact' }).eq('status', 'active'),
           supabaseAdmin.from('guesses').select('id', { count: 'exact' }),
           supabaseAdmin.from('user_sessions').select('fid', { count: 'exact' }),
-          supabaseAdmin.from('rounds').select('prize_pool').eq('status', 'finished'),
+          (supabaseAdmin as any).from('rounds').select('prize').eq('status', 'finished'),
           getRecentActivity(7)
         ])
 
-        const totalPrizeAmount = totalPrizes.data?.reduce((sum, round) => sum + (round.prize_pool || 0), 0) || 0
+        const totalPrizeAmount = (totalPrizes.data as any[])?.reduce((sum: number, round: any) => sum + (parseFloat(round.prize?.replace(/[^0-9.]/g, '') || '0') || 0), 0) || 0
 
         return NextResponse.json({
           overview: {
@@ -253,9 +253,9 @@ async function getRecentActivity(days: number) {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
 
-  const { data } = await supabaseAdmin
+  const { data } = await (supabaseAdmin as any)
     .from('rounds')
-    .select('created_at, status, prize_pool')
+    (supabaseAdmin as any).from('rounds').select('created_at, status, prize')
     .gte('created_at', startDate.toISOString())
     .order('created_at', { ascending: false })
     .limit(10)
@@ -305,7 +305,7 @@ async function getActiveUsers(startDate: Date, endDate: Date): Promise<number> {
     .lte('created_at', endDate.toISOString())
 
   // Count unique users
-  const uniqueUsers = new Set(data?.map(guess => guess.user_fid) || [])
+  const uniqueUsers = new Set((data as any[])?.map((guess: any) => guess.user_fid) || [])
   return uniqueUsers.size
 }
 
@@ -317,7 +317,7 @@ async function getTopUsers(limit: number) {
 
   // Count guesses per user
   const userCounts = data?.reduce((acc, guess) => {
-    acc[guess.user_fid] = (acc[guess.user_fid] || 0) + 1
+    acc[(guess as any).user_fid] = (acc[(guess as any).user_fid] || 0) + 1
     return acc
   }, {} as Record<string, number>) || {}
 
@@ -342,7 +342,7 @@ async function getRoundsByStatus(startDate: Date, endDate: Date) {
     .lte('created_at', endDate.toISOString())
 
   const statusCounts = data?.reduce((acc, round) => {
-    acc[round.status] = (acc[round.status] || 0) + 1
+    acc[(round as any).status] = (acc[(round as any).status] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
@@ -363,7 +363,7 @@ async function getAverageParticipation(startDate: Date, endDate: Date): Promise<
       const { count } = await supabaseAdmin
         .from('guesses')
         .select('id', { count: 'exact' })
-        .eq('round_id', round.id)
+        .eq('round_id', (round as any).id)
 
       return count || 0
     })
@@ -375,12 +375,12 @@ async function getAverageParticipation(startDate: Date, endDate: Date): Promise<
 async function getPrizeDistribution(startDate: Date, endDate: Date) {
   const { data } = await supabaseAdmin
     .from('rounds')
-    .select('prize_pool')
+    .select('prize')
     .eq('status', 'finished')
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
 
-  const prizes = data?.map(round => round.prize_pool || 0) || []
+  const prizes = (data as any[])?.map((round: any) => parseFloat(round.prize?.replace(/[^0-9.]/g, '') || '0') || 0) || []
   
   return {
     total: prizes.reduce((sum, prize) => sum + prize, 0),
@@ -474,7 +474,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (events && Array.isArray(events)) {
         for (const event of events) {
           try {
-            const { error } = await supabaseAdmin
+            const { error } = await (supabaseAdmin as any)
               .from('analytics_events')
               .insert({
                 event: event.name,

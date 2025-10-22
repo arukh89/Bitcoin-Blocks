@@ -91,17 +91,23 @@ async function verifyAdmin(request: NextRequest): Promise<{ fid: string; permiss
 
 async function logAdminAction(adminFid: string, action: string, details: any, request: NextRequest): Promise<void> {
   try {
-    await supabaseAdmin.from('audit_logs').insert({
-      admin_fid: adminFid,
-      action,
-      details: {
-        ...details,
-        ip: request.headers.get('x-forwarded-for') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-        timestamp: new Date().toISOString()
-      },
-      created_at: Date.now()
-    })
+    const { error } = await (supabaseAdmin as any)
+      .from('audit_logs')
+      .insert({
+        admin_fid: adminFid,
+        action,
+        details: {
+          ...details,
+          ip: request.headers.get('x-forwarded-for') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          timestamp: new Date().toISOString()
+        },
+        created_at: Date.now()
+      })
+    
+    if (error) {
+      console.error('Failed to log admin action:', error)
+    }
   } catch (error) {
     console.error('Failed to log admin action:', error)
   }
@@ -271,12 +277,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Log admin action
-        await supabaseAdmin.from('audit_logs').insert({
-          admin_fid: admin.fid,
-          action: 'create_round',
-          details: { roundId: round.id, roundNumber, prize },
-          created_at: Date.now()
-        })
+        const { error: logError } = await (supabaseAdmin as any)
+          .from('audit_logs')
+          .insert({
+            admin_fid: admin.fid,
+            action: 'create_round',
+            details: { roundId: round.id, roundNumber, prize },
+            created_at: Date.now()
+          })
+        
+        if (logError) {
+          console.error('Failed to log admin action:', logError)
+        }
 
         return NextResponse.json({ success: true, round })
       }
@@ -295,12 +307,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Log admin action
-        await supabaseAdmin.from('audit_logs').insert({
-          admin_fid: admin.fid,
-          action: 'end_round',
-          details: { roundId },
-          created_at: Date.now()
-        })
+        const { error: logError2 } = await (supabaseAdmin as any)
+          .from('audit_logs')
+          .insert({
+            admin_fid: admin.fid,
+            action: 'end_round',
+            details: { roundId },
+            created_at: Date.now()
+          })
+        
+        if (logError2) {
+          console.error('Failed to log admin action:', logError2)
+        }
 
         return NextResponse.json({ success: true })
       }
@@ -315,12 +333,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         await supabaseDbFixed.updateRoundResult(roundId, actualTxCount, blockHash, winningAddress)
 
         // Log admin action
-        await supabaseAdmin.from('audit_logs').insert({
-          admin_fid: admin.fid,
-          action: 'update_round_result',
-          details: { roundId, actualTxCount, blockHash, winningAddress },
-          created_at: Date.now()
-        })
+        const { error: logError3 } = await (supabaseAdmin as any)
+          .from('audit_logs')
+          .insert({
+            admin_fid: admin.fid,
+            action: 'update_round_result',
+            details: { roundId, actualTxCount, blockHash, winningAddress },
+            created_at: Date.now()
+          })
+        
+        if (logError3) {
+          console.error('Failed to log admin action:', logError3)
+        }
 
         return NextResponse.json({ success: true })
       }
@@ -345,12 +369,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Log admin action
-        await supabaseAdmin.from('audit_logs').insert({
-          admin_fid: admin.fid,
-          action: 'update_prize_config',
-          details: { config },
-          created_at: Date.now()
-        })
+        const { error: logError4 } = await (supabaseAdmin as any)
+          .from('audit_logs')
+          .insert({
+            admin_fid: admin.fid,
+            action: 'update_prize_config',
+            details: { config },
+            created_at: Date.now()
+          })
+        
+        if (logError4) {
+          console.error('Failed to log admin action:', logError4)
+        }
 
         return NextResponse.json({ success: true, config })
       }

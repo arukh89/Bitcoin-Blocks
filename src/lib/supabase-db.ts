@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin, type Database } from './supabase-singleton'
+import { supabase, supabaseAdmin } from './supabase-singleton'
 import type { Round, Guess, ChatMessage, PrizeConfiguration, Log } from '../types/game'
 import { logSystemError } from './error-handling'
 
@@ -226,9 +226,9 @@ export class SupabaseDatabaseService {
         return []
       }
 
-      return (data || []).map(round => ({
+      return (data || []).map((round: any) => ({
         ...this.transformRound(round),
-        participationCount: round.guesses?.[0]?.count || 0,
+        participationCount: (round as any).guesses?.[0]?.count || 0,
         averageGuess: 0 // Would need to be calculated with a separate query
       }))
     } catch (error) {
@@ -249,7 +249,7 @@ export class SupabaseDatabaseService {
   }): Promise<Round | null> {
     try {
       const now = Date.now()
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await (supabaseAdmin as any)
         .from('rounds')
         .insert({
           round_number: roundData.roundNumber,
@@ -288,7 +288,7 @@ export class SupabaseDatabaseService {
 
   async updateRound(roundId: string, updates: Partial<Round>): Promise<Round | null> {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await (supabaseAdmin as any)
         .from('rounds')
         .update(this.transformRoundToDb(updates))
         .eq('id', roundId)
@@ -312,7 +312,7 @@ export class SupabaseDatabaseService {
 
   async endRound(roundId: string): Promise<boolean> {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('rounds')
         .update({ status: 'closed' })
         .eq('id', roundId)
@@ -336,7 +336,7 @@ export class SupabaseDatabaseService {
 
   async updateRoundResult(roundId: string, actualTxCount: number, blockHash: string, winningFid: string): Promise<boolean> {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('rounds')
         .update({
           status: 'finished',
@@ -401,7 +401,7 @@ export class SupabaseDatabaseService {
   }): Promise<Guess | null> {
     try {
       const now = Date.now()
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('guesses')
         .insert({
           round_id: guessData.roundId,
@@ -491,7 +491,7 @@ export class SupabaseDatabaseService {
   }): Promise<ChatMessage | null> {
     try {
       const now = Date.now()
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('chat_messages')
         .insert({
           user_fid: messageData.userFid,
@@ -556,7 +556,7 @@ export class SupabaseDatabaseService {
       const now = Date.now()
       
       // Get latest version
-      const { data: latestConfig } = await supabase
+      const { data: latestConfig } = await (supabase as any)
         .from('prize_configs')
         .select('version')
         .order('version', { ascending: false })
@@ -565,7 +565,7 @@ export class SupabaseDatabaseService {
 
       const newVersion = (latestConfig?.version || 0) + 1
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await (supabaseAdmin as any)
         .from('prize_configs')
         .insert({
           config_data: configData,
@@ -661,7 +661,7 @@ export class SupabaseDatabaseService {
 
         // Calculate rankings and points
         const guesses = data || []
-        const actualTxCount = guesses[0]?.rounds?.[0]?.actual_tx_count || 0
+        const actualTxCount = (guesses[0] as any)?.rounds?.[0]?.actual_tx_count || 0
         
         return guesses.map((guess: any, index: number) => ({
           rank: index + 1,
@@ -883,7 +883,7 @@ export class SupabaseDatabaseService {
   private async logAction(action: string, details: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // This would need the current user's FID - for now using a placeholder
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('audit_logs')
         .insert({
           admin_fid: 'system', // This should be replaced with actual user FID

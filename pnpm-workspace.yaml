@@ -1,0 +1,10 @@
+packages:
+  - '.'
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bufferutil
+  - core-js
+  - prisma
+  - sharp
+  - utf-8-validate

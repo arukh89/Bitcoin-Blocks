@@ -1,8 +1,7 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Optimize build for Vercel deployment
-  swcMinify: true,
-  
   // Ensure proper environment variable handling
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
@@ -10,13 +9,17 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
   
-  // Configure API routes to use Node.js runtime by default
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-  },
+  // Configure server external packages
+  serverExternalPackages: ['@supabase/supabase-js'],
   
   // Webpack configuration to handle Supabase client properly
   webpack: (config, { isServer }) => {
+    // Add path alias for @/
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+    }
+    
     if (!isServer) {
       // Exclude Node.js-specific modules from client bundle
       config.resolve.fallback = {

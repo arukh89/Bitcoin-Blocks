@@ -1,5 +1,6 @@
 import { supabase, supabaseAdmin } from './supabase-singleton'
 import type { User } from '../types/game'
+import type { Database } from './database.types'
 
 // Enhanced Farcaster authentication helper for Supabase
 export class SupabaseAuth {
@@ -278,14 +279,16 @@ export class SupabaseAuth {
   // Add admin to fallback list
   private async addAdminToFallbackList(fid: number): Promise<void> {
     try {
+      const adminData = {
+        fid: fid.toString(),
+        permissions: { role: 'admin', permissions: ['all'], source: 'fallback' },
+        created_at: Date.now(),
+        updated_at: Date.now()
+      }
+
       const { error } = await supabaseAdmin
         .from('admin_fids')
-        .upsert({
-          fid: fid.toString(),
-          permissions: { role: 'admin', permissions: ['all'], source: 'fallback' },
-          created_at: Date.now(),
-          updated_at: Date.now()
-        }, { onConflict: 'fid' })
+        .upsert(adminData as any, { onConflict: 'fid' })
 
       if (error) {
         throw error
@@ -310,7 +313,7 @@ export class SupabaseAuth {
         new Promise<{ data: null; error: Error }>((_, reject) =>
           setTimeout(() => reject(new Error('Admin check timeout')), 5000)
         )
-      ])
+      ]) as any
 
       if (error) {
         if ('code' in error && error.code === 'PGRST116') {
@@ -381,7 +384,7 @@ export class SupabaseAuth {
 
       const { error } = await supabaseAdmin
         .from('user_sessions')
-        .upsert(sessionData, { onConflict: 'fid' })
+        .upsert(sessionData as any, { onConflict: 'fid' })
 
       if (error) {
         throw new Error(`Database error: ${error.message}`)
@@ -530,7 +533,7 @@ export class SupabaseAuth {
         .from('user_sessions')
         .select('expires_at')
         .eq('fid', fid)
-        .single()
+        .single() as any
 
       if (error) {
         throw new Error(`Session validation failed: ${error.message}`)
@@ -672,25 +675,151 @@ export class SupabaseAuth {
 // Export singleton instance
 export const supabaseAuth = SupabaseAuth.getInstance()
 
-// Helper function to set Supabase session context for RLS
-export async function setSupabaseContext(user: User | null): Promise<void> {
-  if (!user) {
-    // Clear context
-    await supabase.rpc('reset_config')
-    return
+// Helper function to set Supabase session context for RLS with enhanced error handling
+export async function setSupabaseContext(user: User | null): Promise<boolean> {
+  const maxRetries = 3
+  let retryCount = 0
+
+  while (retryCount < maxRetries) {
+    try {
+      if (!user) {
+        // Clear context with retry mechanism
+        const { error: resetError } = await Promise.race([
+          (supabase as any).rpc('reset_config'),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Reset context timeout')), 5000)
+          )
+        ])
+
+        if (resetError) {
+          console.warn(`⚠️ Error resetting Supabase context (attempt ${retryCount + 1}/${maxRetries}):`, resetError)
+          
+          // If this is the last retry, throw the error
+          if (retryCount === maxRetries - 1) {
+            console.error('❌ Failed to reset Supabase context after all retries')
+            return false
+          }
+          
+          retryCount++
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+          continue
+        }
+
+        console.log('✅ Supabase context cleared successfully')
+        return true
+      }
+
+      const fid = user.address.replace('fid-', '')
+      
+      // Validate FID before setting context
+      if (!fid || isNaN(parseInt(fid))) {
+        console.error('❌ Invalid FID for context setting:', fid)
+        return false
+      }
+      
+      // Set current user context for Row Level Security with timeout and retry
+      const { error: setError } = await Promise.race([
+        (supabase as any).rpc('set_config', {
+          key: 'app.current_fid',
+          value: fid
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Set context timeout')), 5000)
+        )
+      ])
+
+      if (setError) {
+        console.warn(`⚠️ Error setting Supabase context for FID ${fid} (attempt ${retryCount + 1}/${maxRetries}):`, setError)
+        
+        // If this is the last retry, throw the error
+        if (retryCount === maxRetries - 1) {
+          console.error('❌ Failed to set Supabase context after all retries')
+          return false
+        }
+        
+        retryCount++
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+        continue
+      }
+
+      console.log('✅ Supabase context set successfully for user:', fid)
+      return true
+
+    } catch (error) {
+      console.warn(`⚠️ Unexpected error in setSupabaseContext (attempt ${retryCount + 1}/${maxRetries}):`, error)
+      
+      // If this is the last retry, return false
+      if (retryCount === maxRetries - 1) {
+        console.error('❌ Unexpected error in setSupabaseContext after all retries:', error)
+        return false
+      }
+      
+      retryCount++
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+    }
   }
 
-  const fid = user.address.replace('fid-', '')
-  
-  // Set current user context for Row Level Security
-  const { error } = await supabase.rpc('set_config', {
-    key: 'app.current_fid',
-    value: fid
-  })
+  return false
+}
 
-  if (error) {
-    console.warn('⚠️ Error setting Supabase context:', error)
-  } else {
-    console.log('✅ Supabase context set for user:', fid)
+// Helper function to get current Supabase context (for debugging)
+export async function getSupabaseContext(): Promise<string | null> {
+  try {
+    const { data, error } = await Promise.race([
+      (supabase as any).rpc('current_setting', { setting_name: 'app.current_fid' }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Get context timeout')), 3000)
+      )
+    ])
+
+    if (error) {
+      console.warn('⚠️ Error getting Supabase context:', error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.warn('⚠️ Unexpected error getting Supabase context:', error)
+    return null
+  }
+}
+
+// Helper function to test Supabase RPC connectivity
+export async function testSupabaseRPCConnectivity(): Promise<boolean> {
+  try {
+    // Test set_config function
+    const { error: setError } = await Promise.race([
+      (supabase as any).rpc('set_config', {
+        key: 'app.test_connectivity',
+        value: 'test-value'
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('RPC test timeout')), 5000)
+      )
+    ])
+
+    if (setError) {
+      console.error('❌ RPC set_config test failed:', setError)
+      return false
+    }
+
+    // Test reset_config function
+    const { error: resetError } = await Promise.race([
+      (supabase as any).rpc('reset_config'),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('RPC reset test timeout')), 5000)
+      )
+    ])
+
+    if (resetError) {
+      console.error('❌ RPC reset_config test failed:', resetError)
+      return false
+    }
+
+    console.log('✅ Supabase RPC connectivity test passed')
+    return true
+  } catch (error) {
+    console.error('❌ Supabase RPC connectivity test failed:', error)
+    return false
   }
 }

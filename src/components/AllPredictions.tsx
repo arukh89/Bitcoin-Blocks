@@ -1,15 +1,13 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
-import { Badge } from './ui/badge'
-import { useGame } from '../context/GameContext'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { useGame } from '@/context/GameContext'
 
-interface AllPredictionsProps {}
-
-export function AllPredictions({}: AllPredictionsProps): React.ReactElement {
-  const { activeRound, getGuessesForRound } = useGame()
+export function AllPredictions(): React.ReactElement {
+  const { activeRound, getGuessesForRound, user } = useGame()
 
   const guesses = activeRound ? getGuessesForRound(activeRound.id) : []
   // Sort by submission time (newest first) for all predictions view
@@ -58,7 +56,7 @@ export function AllPredictions({}: AllPredictionsProps): React.ReactElement {
             <p className="text-gray-500 text-sm mt-2">Be the first to guess!</p>
           </motion.div>
         ) : (
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-800">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             <AnimatePresence mode="popLayout">
               {sortedGuesses.map((entry, index) => (
                 <motion.div
@@ -88,6 +86,11 @@ export function AllPredictions({}: AllPredictionsProps): React.ReactElement {
                     <div>
                       <p className="font-bold text-white flex items-center gap-2">
                         {entry.username}
+                        {user && entry.address === user.address && (
+                          <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-400/50 text-xs">
+                            You
+                          </Badge>
+                        )}
                       </p>
                       <p className="text-xs text-gray-400">
                         @{entry.username} • {new Date(entry.submittedAt).toLocaleTimeString()}
@@ -118,6 +121,22 @@ export function AllPredictions({}: AllPredictionsProps): React.ReactElement {
         )}
       </CardContent>
 
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(147, 51, 234, 0.6);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(147, 51, 234, 0.8);
+        }
+      `}</style>
     </Card>
   )
 }

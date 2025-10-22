@@ -9,7 +9,7 @@ import { useGame } from '../context/GameContext'
 interface CurrentRoundProps {}
 
 export function CurrentRound({}: CurrentRoundProps): React.ReactElement {
-  const { activeRound, connected, errorStates, loadingStates } = useGame()
+  const { activeRound, connected } = useGame()
   const [countdown, setCountdown] = useState<string>('0m 0s')
   const [lastBlockTime, setLastBlockTime] = useState<number | null>(null)
   const [blockNumber, setBlockNumber] = useState<number | null>(null)
@@ -165,9 +165,6 @@ export function CurrentRound({}: CurrentRoundProps): React.ReactElement {
               transition={{ duration: 2, repeat: Infinity }}
             >
               <p className="text-gray-400 text-sm mb-2">🔌 Connecting to database...</p>
-              {errorStates.connection && (
-                <p className="text-red-400 text-xs mt-2">{errorStates.connection}</p>
-              )}
             </motion.div>
           </CardContent>
         </Card>
