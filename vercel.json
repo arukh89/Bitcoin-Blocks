@@ -1,14 +1,16 @@
 {
+  "version": 2,
   "buildCommand": "pnpm run build",
-  "outputDirectory": ".next",
+  "outputDirectory": "public",
+  "framework": "nextjs",
   "functions": {
-    "src/app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
     }
   },
   "env": {
+    "NODE_VERSION": "20",
     "NEXT_PUBLIC_SITE_URL": "https://bitcoin-blocks.vercel.app",
-    "SITE_URL": "https://bitcoin-blocks.vercel.app",
     "NEXTAUTH_URL": "https://bitcoin-blocks.vercel.app",
     "CORS_ORIGIN": "https://bitcoin-blocks.vercel.app",
     "NEXT_PUBLIC_API_BASE_URL": "https://bitcoin-blocks.vercel.app/api",
@@ -18,15 +20,6 @@
     "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
     "SUPABASE_JWT_SECRET": "@supabase_jwt_secret",
     "FARCASTER_API_KEY": "@farcaster_api_key"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_SITE_URL": "https://bitcoin-blocks.vercel.app",
-      "SITE_URL": "https://bitcoin-blocks.vercel.app",
-      "NEXTAUTH_URL": "https://bitcoin-blocks.vercel.app",
-      "CORS_ORIGIN": "https://bitcoin-blocks.vercel.app",
-      "NEXT_PUBLIC_API_BASE_URL": "https://bitcoin-blocks.vercel.app/api"
-    }
   },
   "regions": ["pdx1"]
 }
